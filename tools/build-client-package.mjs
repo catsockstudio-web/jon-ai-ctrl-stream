@@ -24,7 +24,7 @@ const OUT = join(ROOT, 'dist');
 const STAGE = join(OUT, NAME);
 
 /* What the client actually needs to run the overlays. */
-const RUNTIME = ['server.mjs', 'config.js', 'control.html', 'start-hidden.vbs'];
+const RUNTIME = ['server.mjs', 'config.js', 'control.html', 'start-hidden.vbs', 'boot-check.js'];
 const DIRS = ['scenes', 'modules', 'src', 'assets', 'obs'];
 /* The client-facing wrappers, copied from client/ into the package root. */
 const CLIENT = ['START HERE.html', 'Setup.bat', 'Start Server.bat', 'Server Status.bat', 'Stop Server.bat'];

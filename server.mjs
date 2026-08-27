@@ -243,7 +243,13 @@ const server = createServer(async (req, res) => {
     const body = await readFile(file);
     res.writeHead(200, {
       'content-type': TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
-      'cache-control': 'no-store',
+      /* OBS's embedded browser caches hard. A stale copy of one script while
+         the rest of the package has moved on breaks the page in a way that
+         looks identical to the server being down, so refuse caching outright
+         rather than relying on the source being refreshed by hand. */
+      'cache-control': 'no-store, no-cache, must-revalidate, max-age=0',
+      pragma: 'no-cache',
+      expires: '0',
     });
     res.end(body);
   } catch (err) {
