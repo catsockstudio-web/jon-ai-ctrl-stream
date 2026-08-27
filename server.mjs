@@ -258,6 +258,23 @@ const server = createServer(async (req, res) => {
 
 await loadPersisted();
 
+/* A hidden auto-start server plus a manually launched one is an easy mistake
+   to make. Say so plainly instead of printing a stack trace into a log file
+   nobody is watching. */
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`
+  Port ${PORT} is already in use — the overlay server is most likely
+  already running (check with status.bat, stop it with stop.bat).
+
+  Nothing to do: your browser sources are already being served.
+`);
+    process.exit(1);
+  }
+  console.error(err);
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, () => {
   const shown = HOST === '0.0.0.0' ? 'your-machine-ip' : HOST;
   const base = `http://${shown}:${PORT}`;

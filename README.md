@@ -17,13 +17,33 @@ motion rule in here).
 
 ## Quick start (Windows)
 
-Double-click **`start.bat`** in the repo folder. It updates to the latest
-version and starts the server. Leave the window open while you stream; close it
-or press Ctrl+C to stop.
+**Set it and forget it.** Double-click **`install-autostart.bat`** once. The
+server then runs quietly in the background whenever you sign in — before OBS
+ever opens — and you never think about it again. No admin rights needed; it
+only writes a shortcut into your own Startup folder, and it starts the server
+immediately so you do not have to sign out and back in.
 
-**`update.bat`** updates without starting anything, if you would rather control
-the two separately. If you prefer the server never to update on its own, delete
-the `git pull` line from `start.bat`.
+This is the recommended setup. If every browser source goes blank at once, it
+is almost always because the server is not running, and this removes that
+failure mode entirely.
+
+| Script | What it does |
+| --- | --- |
+| `install-autostart.bat` | Run the server at sign-in, hidden. Starts it now too. |
+| `uninstall-autostart.bat` | Stop it running at sign-in. |
+| `status.bat` | Is it running? Shows the last of `server.log` if not. |
+| `stop.bat` | Stop it, however it was started. |
+| `start.bat` | Update, then run it in a visible window. |
+| `update.bat` | Update only. |
+
+If you would rather run it by hand, double-click **`start.bat`** instead and
+leave the window open while you stream. Use one approach or the other — with
+auto-start installed, `start.bat` will find the port already taken and tell you
+so. Prefer `status.bat` and `stop.bat` in that case.
+
+`start.bat` pulls the latest version before starting. If you would rather it
+never update on its own — no surprises before a stream — delete the `git pull`
+line from it. Auto-start never updates; it only runs what you have.
 
 Everything below explains what those do and how to wire OBS up.
 
@@ -269,8 +289,14 @@ See `src/js/providers/README.md` for the contract and a worked plan.
 ## Layout
 
 ```
-start.bat              Windows: update + start the server (double-click)
+install-autostart.bat  Windows: run the server at sign-in (recommended)
+uninstall-autostart.bat
+start-hidden.vbs       Windows: launches the server with no console window
+start.bat              Windows: update + start in a visible window
 update.bat             Windows: update only
+status.bat             Windows: is the server running?
+stop.bat               Windows: stop it
+server.log             last run's server output (git-ignored)
 config.js              defaults — the one file you might hand-edit
 control.html           operator control page
 server.mjs             static host + authoritative state owner (SSE)
