@@ -16,10 +16,12 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-/* Overlay pages composite over game capture: the page itself must be
-   transparent. Full-screen scenes opt back in with .scene--opaque. */
+/* The page body is ALWAYS transparent, including on full-screen scenes.
+   OBS composites camera and game capture below the browser source, so an
+   opaque body would make a transparent camera opening impossible. Scenes that
+   want a solid backdrop paint one with .ja-scene__ground, which can be
+   clipped to leave the camera opening open. */
 body { background: transparent; }
-body.scene--opaque { background: var(--bg); }
 
 /* Nothing in an overlay is interactive; OBS should never see a cursor
    or a text selection. The control page re-enables both. */

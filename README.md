@@ -70,12 +70,30 @@ keeps its state when you cut away.
 | 05 Ending          | `http://127.0.0.1:8787/scenes/ending.html`             | 1920 × 1080   | No — full scene |
 | 06 Offline         | `http://127.0.0.1:8787/scenes/offline.html`            | 1920 × 1080   | No — also exports for the Twitch offline slot |
 
-**Layer order for Gameplay:** game capture at the bottom, then your camera
-positioned inside the webcam frame at **400 × 225 @ x32, y791**, then the
-overlay source on top.
+### Camera placement
 
-**Layer order for Just Chatting:** camera at **1160 × 652 @ x56, y300**, scene
-source on top.
+Both camera scenes render a genuine **transparent opening** where the camera
+belongs, so the camera source sits *below* the overlay in OBS and shows through
+it. You never need to put the camera on top.
+
+| Scene | Camera source size | Position |
+| --- | --- | --- |
+| Gameplay | 400 × 225 | x32, y791 |
+| Just Chatting | 1160 × 652 | x56, y300 |
+
+**Layer order for Gameplay** (top to bottom): overlay browser source → camera →
+game capture.
+
+**Layer order for Just Chatting** (top to bottom): scene browser source →
+camera.
+
+The border, corner ticks, cyan scan and trace, and the nameplate all render
+*over* the camera. Everything else in the scene keeps its designed background.
+
+If you are positioning a camera that is not running yet, turn on **Camera
+placeholder** in the control page's Display panel to fill the opening with the
+striped `CAM_01` plate. It is off by default because it would otherwise paint
+over a live camera — which is exactly the bug it once caused.
 
 ### Modules — only if you want to place pieces yourself
 
@@ -249,7 +267,16 @@ revisit:
    it on. On a live overlay it would cover the game capture; it is a
    positioning aid, so it lives on the control page instead.
 
-3. **Headline sizes assume Chakra Petch has loaded.** The §09 sizes are set for
+3. **The camera opening is a clip-path keyhole.** The scene's opaque layers
+   live in one `.ja-scene__ground` element, clipped by a polygon that traces
+   the stage clockwise and the opening counter-clockwise, bridged back to the
+   origin. The opposing winding is what makes the middle a hole.
+   `polygon(evenodd, …)` expresses this more directly but Chromium clips the
+   whole element away when given it, so the bridge form is the one that works
+   in OBS. The opening is traced with the frame's own corner radii so no camera
+   bleeds past the rounded border.
+
+4. **Headline sizes assume Chakra Petch has loaded.** The §09 sizes are set for
    a condensed face; a wider fallback wraps an extra line and would push the
    Starting Soon column into its footer. `fitToHeight` in `src/js/widgets.js`
    shrinks a headline just enough to fit and restores the authored size once
@@ -259,13 +286,20 @@ revisit:
 
 ```bash
 npm i -D playwright        # dev-only; the package has no runtime dependencies
-node test/acceptance.mjs
+node test/acceptance.mjs   # transport — needs no server, starts its own
+node server.mjs &          # alpha suite runs against a live server
+node test/alpha.mjs
 ```
 
-The suite drives the control page and the overlays in **two separate Chromium
-instances**, which share no `BroadcastChannel` and no `localStorage` — so it
-cannot accidentally pass on same-browser behaviour. It also restarts the server
-mid-run to check reconnection and persistence. See `test/README.md`.
+`acceptance.mjs` drives the control page and the overlays in **two separate
+Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,
+so it cannot accidentally pass on same-browser behaviour. It also restarts the
+server mid-run to check reconnection and persistence.
+
+`alpha.mjs` samples real pixel alpha out of Chromium to prove each camera
+opening is a genuine hole while the scene around it and the chrome over it
+still render, and composites a scene over a coloured backdrop the way OBS
+stacks a camera. See `test/README.md`.
 
 ## Requirements
 

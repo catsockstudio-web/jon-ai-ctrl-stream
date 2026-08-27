@@ -90,6 +90,11 @@ export const config = {
     showSampleGameplay: false,
     /* 'panel' (82% ground) or 'transparent' (drop-shadowed type). §07. */
     chatGround: 'panel',
+    /* The striped CAM_01 plate inside the webcam frame. OFF for live: OBS
+       composites the camera BELOW the browser source, so anything painted in
+       the frame's interior covers it. Turn it on from the control page while
+       positioning a camera that is not running yet. */
+    showCameraPlaceholder: false,
   },
 
   chat: {

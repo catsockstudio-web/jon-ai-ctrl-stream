@@ -153,21 +153,32 @@
 
 /* ---------- WebcamFrame : 400 x 225 @ 32,791 ---------- */
 .ja-webcam { position: relative; }
+/* The frame interior is a genuine hole. OBS composites the camera BELOW this
+   browser source, so anything painted here — a fill, an inset shadow — covers
+   the camera. Only the chrome (border, ticks, scan, trace, nameplate) paints;
+   the middle stays transparent so the camera shows through.
+   The glow is an OUTER shadow, which falls outside the opening and is safe. */
 .ja-webcam__frame {
   position: absolute;
   inset: 0;
   border: var(--hairline-w) solid rgba(139, 77, 255, .42);
   border-radius: 2px 20px 2px 20px;
   overflow: hidden;
+  background: transparent;
+  box-shadow: 0 0 36px rgba(139, 77, 255, .2);
+}
+
+/* Setup/debug only: the striped plate and CAM_01 caption from the design
+   sheet, for positioning the source before a camera exists. Never on by
+   default — it would paint over a live camera. */
+.ja-webcam--placeholder .ja-webcam__frame {
   background: repeating-linear-gradient(135deg, #15111F 0 8px, #100D18 8px 16px);
   box-shadow: 0 0 36px rgba(139, 77, 255, .2), inset 0 0 40px rgba(0, 0, 0, .5);
 }
-/* The frame is a cut-out: OBS puts the real camera *behind* this source,
-   so the striped fill is only ever seen when no camera is placed. */
 .ja-webcam__fallback {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -175,6 +186,7 @@
   font-family: var(--font-mono);
   color: rgba(234, 234, 242, .4);
 }
+.ja-webcam--placeholder .ja-webcam__fallback { display: flex; }
 .ja-webcam__fallback-id   { font-size: 16px; letter-spacing: .3em; }
 .ja-webcam__fallback-dim  { font-size: 14px; letter-spacing: .16em; }
 /* CAM SCAN — 60px cyan wash, 8% opacity, under the video. */
@@ -579,6 +591,14 @@
 
 /* ---------- SceneShell : glow field + grid + border ---------- */
 .ja-scene { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
+
+/* Every opaque background layer a scene paints lives inside this element, so
+   a single clip-path can punch the camera opening through all of them at once.
+   The page body itself is always transparent — opacity is a scene's decision,
+   expressed here, which is what makes a hole possible at all. Descendants are
+   clipped by the parent, so the glow can animate inside without dragging the
+   hole around with it. */
+.ja-scene__ground { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
 .ja-scene__glow {
   position: absolute;
   inset: -4%;

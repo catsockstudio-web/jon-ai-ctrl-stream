@@ -16,16 +16,17 @@
    Same system, no live modules. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { mascotSlot } from '../src/js/components.js';
+import { mascotSlot, sceneGround} from '../src/js/components.js';
 
 startScene(config, {
-  opaque: true,
   render(state) {
     const { channel } = state;
     return `
-      <div class="ja-scene__glow" style="background:radial-gradient(65% 65% at 18% 28%,rgba(185,92,240,.3),transparent 60%),radial-gradient(60% 60% at 88% 78%,rgba(34,230,224,.2),transparent 58%);animation-duration:calc(32s * var(--motion))"></div>
-      <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 5px)"></div>
-      <div class="ja-scene__vignette" style="background:linear-gradient(180deg,rgba(10,10,15,.3),rgba(10,10,15,.72))"></div>
+      ${sceneGround(`
+  <div class="ja-scene__glow" style="background:radial-gradient(65% 65% at 18% 28%,rgba(185,92,240,.3),transparent 60%),radial-gradient(60% 60% at 88% 78%,rgba(34,230,224,.2),transparent 58%);animation-duration:calc(32s * var(--motion))"></div>
+        <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 5px)"></div>
+        <div class="ja-scene__vignette" style="background:linear-gradient(180deg,rgba(10,10,15,.3),rgba(10,10,15,.72))"></div>
+      `)}
 
       <div style="position:absolute;left:140px;top:340px;width:1000px;display:flex;flex-direction:column;gap:26px">
         <div style="font-family:var(--font-mono);font-size:20px;letter-spacing:.34em;color:var(--text-2)">STATUS // OFFLINE</div>

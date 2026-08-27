@@ -15,17 +15,19 @@
 /* 03 / JUST CHATTING — camera-led layout, same tokens, different weighting. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { avatar, chatBox, webcamFrame, infoTile, goalBar, stinger } from '../src/js/components.js';
+import { avatar, chatBox, webcamFrame, infoTile, goalBar, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
+import { fitToHeight } from '../src/js/widgets.js';
 
 startScene(config, {
-  opaque: true,
   alerts: true,
   render(state) {
     const { modules, channel, stream, activity, goals } = state;
     const live = Boolean(stream.startedAt);
     return `
-      <div class="ja-scene__glow" style="background:radial-gradient(60% 55% at 30% 25%,rgba(139,77,255,.24),transparent 60%),radial-gradient(55% 55% at 85% 80%,rgba(34,230,224,.16),transparent 58%);animation-duration:calc(30s * var(--motion))"></div>
-      <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 5px)"></div>
+      ${sceneGround(`
+        <div class="ja-scene__glow" style="background:radial-gradient(60% 55% at 30% 25%,rgba(139,77,255,.24),transparent 60%),radial-gradient(55% 55% at 85% 80%,rgba(34,230,224,.16),transparent 58%);animation-duration:calc(30s * var(--motion))"></div>
+        <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 5px)"></div>
+      `, CAMERA_OPENINGS.justChatting)}
 
       <div style="position:absolute;left:56px;top:48px;display:flex;align-items:center;gap:16px">
         ${avatar({ size: 52 })}
@@ -38,11 +40,11 @@ startScene(config, {
 
       <div style="position:absolute;left:56px;top:150px;width:1160px;padding:26px 32px;background:rgba(14,14,20,.76);border:var(--hairline-w) solid var(--hairline);border-left:3px solid var(--purple);border-radius:2px 20px 2px 20px">
         <div style="font-family:var(--font-mono);font-size:15px;letter-spacing:.28em;color:var(--text-2)">TODAY'S TOPIC</div>
-        <div style="font-family:var(--font-display);font-weight:600;font-size:44px;color:var(--text-1);margin-top:10px;line-height:1.1">${stream.topic}</div>
+        <div data-fit="topic" style="font-family:var(--font-display);font-weight:600;font-size:44px;color:var(--text-1);margin-top:10px;line-height:1.1">${stream.topic}</div>
       </div>
 
-      <div style="position:absolute;left:56px;top:300px">
-        ${webcamFrame(state, { width: 1160, height: 652, ticks: 22 })}
+      <div style="position:absolute;left:${CAMERA_OPENINGS.justChatting.x}px;top:${CAMERA_OPENINGS.justChatting.y}px">
+        ${webcamFrame(state, { width: CAMERA_OPENINGS.justChatting.width, height: CAMERA_OPENINGS.justChatting.height, ticks: 22 })}
       </div>
 
       ${modules.chat ? `
@@ -64,6 +66,13 @@ startScene(config, {
       </div>
       ${stinger()}
     `;
+  },
+  onRender(state, stage) {
+    /* The topic panel sits at y150 and the camera opening starts at y300, so
+       the panel has to end before it. A long topic — or a fallback font wider
+       than Chakra Petch — wraps to a second line and would push an opaque
+       panel down over the top of the camera. Shrink the topic instead. */
+    fitToHeight(stage.querySelector('[data-fit="topic"]'), 63, { minSize: 24, step: 2 });
   },
 });
 </script>

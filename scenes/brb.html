@@ -18,21 +18,22 @@
    proportions match the design exactly at full resolution. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { terminalLine, stinger } from '../src/js/components.js';
+import { terminalLine, stinger, sceneGround} from '../src/js/components.js';
 import { typeOn, fitToHeight } from '../src/js/widgets.js';
 import { goalPercent } from '../src/js/format.js';
 
 const BOOT_LINE = '> grinder: running · stream: held';
 
 startScene(config, {
-  opaque: true,
   render(state) {
     const brew = Math.round(goalPercent(state.goals.coffee));
     return `
-      <div class="ja-scene__bg" data-asset="brbBackground"></div>
-      <div class="ja-scene__glow" style="inset:-6%;background:radial-gradient(60% 60% at 30% 70%,rgba(240,168,85,.2),transparent 60%),radial-gradient(60% 60% at 75% 25%,rgba(139,77,255,.3),transparent 60%);animation-duration:calc(24s * var(--motion))"></div>
-      <div class="ja-scene__grid"></div>
-      <div style="position:absolute;left:114px;top:114px;right:114px;bottom:114px;border:var(--hairline-w) solid rgba(139,77,255,.2);border-radius:3px 20px 3px 20px"></div>
+      ${sceneGround(`
+  <div class="ja-scene__bg" data-asset="brbBackground"></div>
+        <div class="ja-scene__glow" style="inset:-6%;background:radial-gradient(60% 60% at 30% 70%,rgba(240,168,85,.2),transparent 60%),radial-gradient(60% 60% at 75% 25%,rgba(139,77,255,.3),transparent 60%);animation-duration:calc(24s * var(--motion))"></div>
+        <div class="ja-scene__grid"></div>
+        <div style="position:absolute;left:114px;top:114px;right:114px;bottom:114px;border:var(--hairline-w) solid rgba(139,77,255,.2);border-radius:3px 20px 3px 20px"></div>
+      `)}
 
       <div style="position:absolute;left:195px;top:325px;width:875px;display:flex;flex-direction:column;gap:37px">
         <div style="font-family:var(--font-mono);font-size:31px;letter-spacing:.32em;color:var(--amber)">STATUS // REFILLING</div>

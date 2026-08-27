@@ -16,23 +16,24 @@
    starting-background.jpg drops in behind the CSS glow field if present. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { mascotSlot, terminalLine, countdown, stinger } from '../src/js/components.js';
+import { mascotSlot, terminalLine, countdown, stinger, sceneGround} from '../src/js/components.js';
 import { caffeinePercent } from '../src/js/format.js';
 import { typeOn, fitToHeight } from '../src/js/widgets.js';
 
 const BOOT_LINE = '> brewing_sequence: initializing';
 
 startScene(config, {
-  opaque: true,
   render(state) {
     const caffeine = caffeinePercent(state.caffeine, state.stream);
     const showCountdown = Number.isFinite(state.stream.countdownSeconds);
     return `
-      <div class="ja-scene__bg" data-asset="startingBackground"></div>
-      <div class="ja-scene__glow" style="background:radial-gradient(70% 60% at 22% 30%,rgba(139,77,255,.34),transparent 62%),radial-gradient(65% 60% at 82% 72%,rgba(34,230,224,.22),transparent 60%)"></div>
-      <div class="ja-scene__grid"></div>
-      <div class="ja-scene__vignette"></div>
-      <div class="ja-scene__border"></div>
+      ${sceneGround(`
+  <div class="ja-scene__bg" data-asset="startingBackground"></div>
+        <div class="ja-scene__glow" style="background:radial-gradient(70% 60% at 22% 30%,rgba(139,77,255,.34),transparent 62%),radial-gradient(65% 60% at 82% 72%,rgba(34,230,224,.22),transparent 60%)"></div>
+        <div class="ja-scene__grid"></div>
+        <div class="ja-scene__vignette"></div>
+        <div class="ja-scene__border"></div>
+      `)}
 
       <div style="position:absolute;left:180px;top:300px;width:940px;display:flex;flex-direction:column;gap:28px">
         <div style="display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:20px;letter-spacing:.32em;color:var(--cyan)">

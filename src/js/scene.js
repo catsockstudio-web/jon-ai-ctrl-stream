@@ -23,7 +23,6 @@ import { startTicker, createAlertLayer } from './widgets.js';
  * @param {object} options
  * @param {(state: object) => string} options.render  stage markup for a state
  * @param {string}  [options.base='../']  path back to the package root
- * @param {boolean} [options.opaque=false] full-screen scene (not an overlay)
  * @param {boolean} [options.alerts=false] mount the alert layer
  * @param {'width'|'contain'} [options.fit='width']
  * @param {(state: object, root: HTMLElement, store: object) => void} [options.onRender]
@@ -32,7 +31,6 @@ export async function startScene(config, options) {
   const {
     render,
     base = '../',
-    opaque = false,
     alerts = false,
     fit = 'width',
     width = 1920,
@@ -43,7 +41,6 @@ export async function startScene(config, options) {
     onRender,
   } = options;
 
-  if (opaque) document.body.classList.add('scene--opaque');
   mountStage({ fit, width, height });
 
   const stage = document.createElement('div');
@@ -94,5 +91,5 @@ export async function startScene(config, options) {
  * @param {number} options.height  authored module height
  */
 export function startModule(config, options) {
-  return startScene(config, { opaque: false, ...options });
+  return startScene(config, options);
 }

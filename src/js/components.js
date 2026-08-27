@@ -94,11 +94,78 @@ export function chatBox(state, { width = 360, height = 680, meta = 'LIVE' } = {}
     </div>`;
 }
 
+/* ---------- camera openings ----------
+   One source of truth for where a camera shows through. A scene uses the same
+   record to position its frame AND to punch its ground, so the hole and the
+   border can never drift apart. Values are the §09 measurements. */
+export const CAMERA_OPENINGS = {
+  gameplay:     { x: 32, y: 791, width: 400,  height: 225 },
+  justChatting: { x: 56, y: 300, width: 1160, height: 652 },
+};
+
+/* Frame corner radii, matching `border-radius: 2px 20px 2px 20px`
+   (top-left, top-right, bottom-right, bottom-left). */
+const FRAME_RADII = { tl: 2, tr: 20, br: 2, bl: 20 };
+const ARC_STEPS = 5;
+
+function arc(cx, cy, r, fromDeg, toDeg, out) {
+  if (r <= 0) { out.push([cx, cy]); return; }
+  for (let i = 0; i <= ARC_STEPS; i += 1) {
+    const t = (fromDeg + (toDeg - fromDeg) * (i / ARC_STEPS)) * Math.PI / 180;
+    out.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+  }
+}
+
+/**
+ * A clip-path filling the whole stage EXCEPT a rounded camera opening.
+ *
+ * Built as a "keyhole": the outer rectangle clockwise, then the opening
+ * counter-clockwise, joined by a zero-width bridge back to the origin. The
+ * opposing winding is what makes the middle a hole under the default nonzero
+ * fill rule. `polygon(evenodd, ...)` would say this more directly, but
+ * Chromium clips the entire element away when given it — so the bridge form
+ * is the one that actually works in OBS.
+ *
+ * The opening is traced with the frame's own corner radii, so no camera
+ * bleeds past the rounded border at the corners.
+ */
+export function groundCutout(opening, { stageWidth = 1920, stageHeight = 1080 } = {}) {
+  const { x, y, width: w, height: h } = opening;
+  const { tl, tr, br, bl } = FRAME_RADII;
+  const ring = [];
+
+  /* Counter-clockwise in screen coordinates: down the left edge, across the
+     bottom, up the right edge, back along the top. */
+  ring.push([x, y + tl]);
+  arc(x + bl, y + h - bl, bl, 180, 90, ring);      // bottom-left
+  arc(x + w - br, y + h - br, br, 90, 0, ring);    // bottom-right
+  arc(x + w - tr, y + tr, tr, 0, -90, ring);       // top-right
+  arc(x + tl, y + tl, tl, -90, -180, ring);        // top-left
+
+  const px = ([a, b]) => `${a.toFixed(2)}px ${b.toFixed(2)}px`;
+  const outer = [[0, 0], [stageWidth, 0], [stageWidth, stageHeight], [0, stageHeight], [0, 0]];
+  return `polygon(${[...outer.map(px), ...ring.map(px), px([0, 0])].join(', ')})`;
+}
+
+/**
+ * Wrap a scene's opaque background layers.
+ *
+ * Anything painting a solid backdrop belongs in here rather than on the body,
+ * so `opening` can cut one genuine hole through all of it at once.
+ */
+export function sceneGround(inner, opening = null) {
+  const clip = opening ? `clip-path:${groundCutout(opening)};` : '';
+  return `<div class="ja-scene__ground" style="${clip}">${inner}</div>`;
+}
+
 /* ---------- WebcamFrame — 400 x 225 @ 32,791 ---------- */
 export function webcamFrame(state, { width = 400, height = 225, label = null, ticks = 16 } = {}) {
   const name = label ?? state.channel.wordmark;
+  /* Off by default: the striped plate is a positioning aid, and painting it
+     over a live camera is exactly the bug it used to cause. */
+  const placeholder = state.display.showCameraPlaceholder ? ' ja-webcam--placeholder' : '';
   return `
-    <div class="ja-webcam" style="width:${width}px;height:${height}px">
+    <div class="ja-webcam${placeholder}" style="width:${width}px;height:${height}px">
       <div class="ja-webcam__frame">
         <div class="ja-webcam__fallback">
           <div class="ja-webcam__fallback-id">${escapeHtml(state.channel.camLabel)}</div>
