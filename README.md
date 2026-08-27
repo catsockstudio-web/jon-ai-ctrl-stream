@@ -15,6 +15,18 @@ motion rule in here).
 
 ---
 
+## Quick start (Windows)
+
+Double-click **`start.bat`** in the repo folder. It updates to the latest
+version and starts the server. Leave the window open while you stream; close it
+or press Ctrl+C to stop.
+
+**`update.bat`** updates without starting anything, if you would rather control
+the two separately. If you prefer the server never to update on its own, delete
+the `git pull` line from `start.bat`.
+
+Everything below explains what those do and how to wire OBS up.
+
 ## 1. Start the server
 
 `server.mjs` is both the static host and the **owner of live overlay state**.
@@ -257,6 +269,8 @@ See `src/js/providers/README.md` for the contract and a worked plan.
 ## Layout
 
 ```
+start.bat              Windows: update + start the server (double-click)
+update.bat             Windows: update only
 config.js              defaults — the one file you might hand-edit
 control.html           operator control page
 server.mjs             static host + authoritative state owner (SSE)
