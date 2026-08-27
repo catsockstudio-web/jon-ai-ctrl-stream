@@ -1,0 +1,688 @@
+/* ============================================================
+   Component inventory (§09). One class per module in the sheet.
+   Measurements are literal 1:1 pixels from §09 GAMEPLAY
+   MEASUREMENTS and the §07 component sheet.
+   ============================================================ */
+
+/* ---------- Panel : base surface ---------- */
+.ja-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  border: var(--hairline-w) solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--glow-violet), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.ja-panel--sm    { border-radius: var(--radius-sm); }
+.ja-panel--plain { background: rgba(14, 14, 20, .74); backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* ---------- PanelHeader : mono label + edge trace ---------- */
+.ja-panel-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  padding: 0 16px;
+  background: linear-gradient(90deg, rgba(139, 77, 255, .24), rgba(34, 230, 224, .06) 70%, transparent);
+  border-bottom: var(--hairline-w) solid rgba(139, 77, 255, .28);
+  font-family: var(--font-mono);
+}
+.ja-panel-header__label { font-size: 14px; letter-spacing: .26em; color: var(--cyan); }
+.ja-panel-header__meta  { font-size: 13px; letter-spacing: .14em; color: var(--text-2); }
+/* EDGE TRACE — one panel at a time. */
+.ja-panel-header__trace {
+  position: absolute;
+  left: 0;
+  bottom: calc(-1 * var(--hairline-w));
+  width: 25%;
+  height: var(--hairline-w);
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: ja-trace-x calc(6s * var(--motion)) linear infinite;
+}
+
+/* ---------- BrandBar : 344 x 76 @ 32,32 ---------- */
+.ja-brand-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 76px;
+  padding: 0 24px 0 12px;
+  background: rgba(10, 10, 15, .72);
+  border: var(--hairline-w) solid rgba(139, 77, 255, .34);
+  border-radius: 2px 18px 2px 18px;
+  box-shadow: 0 0 28px rgba(139, 77, 255, .16), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.ja-brand-bar__text     { display: flex; flex-direction: column; gap: 6px; }
+.ja-brand-bar__wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;                 /* §09 wordmark 26 */
+  letter-spacing: .06em;
+  color: var(--text-1);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ja-brand-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: .22em;
+  color: var(--text-2);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ja-brand-bar__show { color: var(--cyan); }
+
+/* STATUS BREATH — the live dot. */
+.ja-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 9px var(--cyan);
+  flex: none;
+  animation: ja-pulse calc(2.6s * var(--motion)) ease-in-out infinite;
+}
+.ja-dot--lg      { width: 9px; height: 9px; box-shadow: 0 0 12px var(--cyan); }
+.ja-dot--magenta { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); animation-duration: calc(2s * var(--motion)); }
+.ja-dot--offline { background: var(--text-2); box-shadow: none; animation: none; }
+
+/* ---------- Avatar : eye-pair fallback, image override ---------- */
+.ja-avatar {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  background: repeating-linear-gradient(45deg, #1A1526 0 5px, #141020 5px 10px);
+  border: var(--hairline-w) solid rgba(34, 230, 224, .4);
+  box-shadow: 0 0 18px rgba(34, 230, 224, .18);
+  background-size: cover;
+  background-position: center;
+}
+.ja-avatar__eye {
+  position: absolute;
+  top: 24px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+  animation: ja-eye calc(7s * var(--motion)) linear infinite;
+}
+.ja-avatar__eye--l { left: 13px; }
+.ja-avatar__eye--r { left: 33px; }
+/* When a real avatar.png resolves, the fallback eyes step aside. */
+.ja-avatar.has-asset { background-image: var(--asset-image); border-color: rgba(34, 230, 224, .4); }
+.ja-avatar.has-asset .ja-avatar__eye { display: none; }
+/* EYE BLOOM on alert. */
+.ja-avatar.is-blooming .ja-avatar__eye { animation: ja-eye-bloom 180ms var(--ease); }
+
+/* ---------- SystemStrip : h44, right-aligned @ y32 ---------- */
+.ja-system-strip {
+  display: flex;
+  align-items: stretch;
+  height: 44px;
+  background: rgba(10, 10, 15, .72);
+  border: var(--hairline-w) solid rgba(139, 77, 255, .28);
+  border-radius: 2px 14px 2px 14px;
+  overflow: hidden;
+  box-shadow: 0 0 22px rgba(139, 77, 255, .12);
+}
+.ja-system-strip__cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: .16em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ja-system-strip__cell + .ja-system-strip__cell { border-left: var(--hairline-w) solid var(--hairline-soft); }
+.ja-system-strip__value          { color: var(--text-1); }
+.ja-system-strip__value--amber   { color: var(--amber); }
+.ja-system-strip__value--cyan    { color: var(--cyan); }
+
+/* ---------- WebcamFrame : 400 x 225 @ 32,791 ---------- */
+.ja-webcam { position: relative; }
+.ja-webcam__frame {
+  position: absolute;
+  inset: 0;
+  border: var(--hairline-w) solid rgba(139, 77, 255, .42);
+  border-radius: 2px 20px 2px 20px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, #15111F 0 8px, #100D18 8px 16px);
+  box-shadow: 0 0 36px rgba(139, 77, 255, .2), inset 0 0 40px rgba(0, 0, 0, .5);
+}
+/* The frame is a cut-out: OBS puts the real camera *behind* this source,
+   so the striped fill is only ever seen when no camera is placed. */
+.ja-webcam__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  color: rgba(234, 234, 242, .4);
+}
+.ja-webcam__fallback-id   { font-size: 16px; letter-spacing: .3em; }
+.ja-webcam__fallback-dim  { font-size: 14px; letter-spacing: .16em; }
+/* CAM SCAN — 60px cyan wash, 8% opacity, under the video. */
+.ja-webcam__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(34, 230, 224, .1), transparent);
+  animation: ja-scan calc(7s * var(--motion)) linear infinite;
+}
+.ja-webcam__trace {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30%;
+  height: var(--accent-w);
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: ja-trace-x calc(5s * var(--motion)) linear infinite;
+}
+.ja-webcam__tick {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+}
+.ja-webcam__tick--tl { left: 0; top: calc(-1 * var(--hairline-w)); border-left: var(--accent-w) solid var(--cyan); border-top: var(--accent-w) solid var(--cyan); }
+.ja-webcam__tick--br { right: 0; bottom: calc(-1 * var(--hairline-w)); border-right: var(--accent-w) solid var(--cyan); border-bottom: var(--accent-w) solid var(--cyan); }
+.ja-webcam__nameplate {
+  position: absolute;
+  left: 14px;
+  bottom: -14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 28px;
+  padding: 0 14px;
+  background: rgba(10, 10, 15, .92);
+  border: var(--hairline-w) solid rgba(34, 230, 224, .4);
+  border-radius: 2px 10px 2px 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: .2em;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+/* ---------- ChatBox : 360 x 680 @ 1528,120 ---------- */
+.ja-chat {
+  position: relative;
+  background: linear-gradient(180deg, rgba(16, 16, 24, .8) 0%, rgba(10, 10, 15, .62) 100%);
+  border: var(--hairline-w) solid var(--hairline);
+  border-radius: 2px 18px 2px 18px;
+  overflow: hidden;
+  box-shadow: 0 0 34px rgba(139, 77, 255, .14);
+}
+/* Second ground: fully transparent, same type, drop-shadowed (§07). */
+.ja-chat--transparent {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+.ja-chat--transparent .ja-panel-header { background: none; border-bottom: none; }
+.ja-chat--transparent .ja-chat__list   { text-shadow: 0 2px 6px rgba(0, 0, 0, .9), 0 0 2px rgba(0, 0, 0, .8); }
+.ja-chat--transparent .ja-chat__scrim  { display: none; }
+
+.ja-chat__list {
+  display: flex;
+  flex-direction: column;      /* newest first, top-anchored */
+  gap: 14px;
+  padding: 16px;
+  height: calc(100% - 38px);
+  overflow: hidden;
+}
+.ja-chat__msg {
+  font-family: var(--font-ui);
+  font-size: 20px;             /* §09 chat msg 20 */
+  color: var(--text-1);
+  line-height: 1.3;
+  word-wrap: break-word;
+  /* messages fade + rise 200ms */
+  animation: ja-alert-in calc(200ms * var(--motion)) var(--ease);
+}
+.ja-chat__author { font-weight: 700; }
+.ja-chat__msg--highlight {
+  padding: 10px 12px;
+  background: rgba(139, 77, 255, .14);
+  border-left: var(--accent-w) solid var(--purple);
+  border-radius: 2px 8px 2px 8px;
+}
+.ja-chat__emote {
+  display: inline-block;
+  vertical-align: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(140deg, var(--violet), var(--cyan));
+}
+/* 3px violet->cyan rail, no arrows. */
+.ja-chat__rail {
+  position: absolute;
+  right: 5px;
+  top: 56px;
+  width: 3px;
+  height: 180px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--violet), var(--cyan));
+  opacity: .5;
+}
+/* §07: the oldest message fades under a 120px bottom scrim. */
+.ja-chat__scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  background: linear-gradient(180deg, transparent, rgba(10, 10, 15, .9));
+  pointer-events: none;
+}
+
+/* ---------- InfoTile : 250 x 70, kicker + value + accent edge ---------- */
+.ja-tile {
+  padding: 12px 16px;
+  background: rgba(14, 14, 20, .74);
+  border: var(--hairline-w) solid rgba(139, 77, 255, .28);
+  border-left: var(--accent-w) solid var(--violet);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 20px rgba(139, 77, 255, .12);
+}
+.ja-tile__kicker {
+  font-family: var(--font-mono);
+  font-size: 13px;             /* §09 tile kicker 13 */
+  letter-spacing: .26em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.ja-tile__value {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 24px;             /* §09 tile value 24 */
+  color: var(--text-1);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Accent selects meaning: violet identity, cyan community,
+   amber coffee/money, magenta bits (§07). */
+.ja-tile--violet  { border-left-color: var(--violet);  box-shadow: 0 0 20px rgba(139, 77, 255, .12); }
+.ja-tile--cyan    { border-left-color: var(--cyan);    box-shadow: 0 0 20px rgba(34, 230, 224, .10); }
+.ja-tile--amber   { border-left-color: var(--amber);   box-shadow: 0 0 20px rgba(240, 168, 85, .10); }
+.ja-tile--magenta { border-left-color: var(--magenta); box-shadow: 0 0 20px rgba(226, 86, 200, .10); }
+
+/* ---------- GoalBar : rail / segmented / mug ---------- */
+.ja-goal__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: .22em;
+}
+.ja-goal__label { color: var(--text-2); }
+.ja-goal__value { color: var(--cyan); }
+
+/* rail */
+.ja-goal__rail {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .07);
+  overflow: hidden;
+}
+.ja-goal__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--violet), var(--purple) 55%, var(--cyan));
+  box-shadow: 0 0 14px rgba(34, 230, 224, .5);
+  /* fill animates 600ms ease-out on change */
+  transition: width 600ms var(--ease);
+  animation: ja-fill calc(4.5s * var(--motion)) ease-in-out infinite;
+}
+/* a single cyan pulse crosses the bar when a goal ticks */
+.ja-goal__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  background: linear-gradient(90deg, transparent, rgba(34, 230, 224, .85), transparent);
+  animation: ja-trace-x calc(700ms * var(--motion)) var(--ease);
+}
+
+/* segmented */
+.ja-goal__segments { display: flex; gap: 4px; height: 12px; }
+.ja-goal__segment  { flex: 1; background: rgba(255, 255, 255, .08); border-radius: 2px; transition: background 600ms var(--ease); }
+.ja-goal__segment.is-filled { background: var(--purple); }
+.ja-goal__segment.is-filled:first-child { box-shadow: 0 0 10px rgba(185, 92, 240, .5); }
+
+/* mug — the one place literal coffee shows up */
+.ja-goal__mug {
+  position: relative;
+  height: 34px;
+  border: var(--hairline-w) solid rgba(240, 168, 85, .4);
+  border-radius: 3px 3px 14px 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .04);
+}
+.ja-goal__mug-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(240, 168, 85, .75), rgba(240, 168, 85, .45));
+  transition: height 600ms var(--ease);
+  animation: ja-fill calc(5s * var(--motion)) ease-in-out infinite;
+}
+.ja-goal__mug-pct {
+  position: absolute;
+  right: 10px;
+  top: 7px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-1);
+}
+
+/* ---------- Alert : 720 x 132, shared shell, 4 variants ---------- */
+.ja-alert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 720px;
+  height: 132px;
+  padding: 0 28px;
+  background: linear-gradient(90deg, rgba(139, 77, 255, .26), rgba(14, 14, 20, .86) 55%);
+  border: var(--hairline-w) solid rgba(139, 77, 255, .5);
+  border-left: 3px solid var(--violet);
+  border-radius: 2px 20px 2px 20px;
+  box-shadow: var(--glow-alert);
+}
+.ja-alert.is-entering { animation: ja-alert-in  calc(320ms * var(--motion)) var(--ease) both; }
+.ja-alert.is-leaving  { animation: ja-alert-out calc(260ms * var(--motion)) var(--ease) both; }
+
+.ja-alert__icon {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: 50%;
+  background: repeating-linear-gradient(45deg, #1A1526 0 6px, #141020 6px 12px);
+  border: var(--hairline-w) solid rgba(34, 230, 224, .45);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  color: var(--text-1);
+}
+.ja-alert__icon.has-asset { background-image: var(--asset-image); border-radius: 50%; }
+.ja-alert__icon.has-asset > * { display: none; }
+
+.ja-alert__kicker {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: .3em;
+  color: var(--purple);
+  white-space: nowrap;
+}
+.ja-alert__name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 38px;             /* §09 alert name 38 */
+  color: var(--text-1);
+  line-height: 1.15;
+}
+.ja-alert__message { font-size: 19px; color: var(--text-2); }
+/* cyan edge trace runs once on entrance */
+.ja-alert__trace {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 30%;
+  height: var(--accent-w);
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: ja-trace-x calc(3.4s * var(--motion)) linear;
+}
+
+/* follower (violet) is the base shell above; the other three restyle it. */
+.ja-alert--sub {
+  background: linear-gradient(90deg, rgba(34, 230, 224, .2), rgba(14, 14, 20, .86) 55%);
+  border-color: rgba(34, 230, 224, .5);
+  border-left-color: var(--cyan);
+  box-shadow: 0 0 44px rgba(34, 230, 224, .24);
+}
+.ja-alert--sub .ja-alert__kicker { color: var(--cyan); }
+.ja-alert--sub .ja-alert__icon {
+  border-radius: 2px 18px 2px 18px;
+  background: linear-gradient(140deg, rgba(34, 230, 224, .3), rgba(139, 77, 255, .25));
+  border-color: rgba(34, 230, 224, .5);
+  font-size: 13px;
+  letter-spacing: .14em;
+}
+
+.ja-alert--tip {
+  background: linear-gradient(90deg, rgba(240, 168, 85, .2), rgba(14, 14, 20, .86) 55%);
+  border-color: rgba(240, 168, 85, .45);
+  border-left-color: var(--amber);
+  box-shadow: 0 0 44px rgba(240, 168, 85, .2);
+}
+.ja-alert--tip .ja-alert__kicker { color: var(--amber); }
+.ja-alert--tip .ja-alert__icon {
+  border-radius: 2px 18px 2px 18px;
+  border-color: rgba(240, 168, 85, .5);
+  background: rgba(240, 168, 85, .12);
+}
+
+.ja-alert--bits {
+  background: linear-gradient(90deg, rgba(226, 86, 200, .2), rgba(14, 14, 20, .86) 55%);
+  border-color: rgba(226, 86, 200, .45);
+  border-left-color: var(--magenta);
+  box-shadow: 0 0 44px rgba(226, 86, 200, .2);
+}
+.ja-alert--bits .ja-alert__kicker { color: var(--magenta); }
+.ja-alert--bits .ja-alert__icon {
+  border-radius: 50%;
+  border-color: rgba(226, 86, 200, .55);
+  background: radial-gradient(circle at 50% 40%, rgba(226, 86, 200, .4), transparent 70%);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+/* ---------- Steam : shared by mug icon, mascot, BRB art ---------- */
+.ja-steam { display: flex; gap: 7px; align-items: flex-end; }
+.ja-steam__bar {
+  width: 5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .6), transparent);
+  animation: ja-steam calc(3.6s * var(--motion)) ease-in-out infinite;
+}
+.ja-steam__bar:nth-child(1) { height: 26px; animation-delay: 0s; }
+.ja-steam__bar:nth-child(2) { height: 34px; animation-delay: calc(.8s * var(--motion)); opacity: .85; }
+.ja-steam__bar:nth-child(3) { height: 22px; animation-delay: calc(1.6s * var(--motion)); opacity: .75; }
+
+/* ---------- MascotSlot : image or eye-glow fallback ---------- */
+.ja-mascot {
+  position: relative;
+  border: var(--hairline-w) dashed rgba(34, 230, 224, .4);
+  border-radius: 8px 40px 8px 40px;
+  background: repeating-linear-gradient(135deg, rgba(139, 77, 255, .1) 0 12px, rgba(10, 10, 15, .35) 12px 24px);
+  box-shadow: 0 0 70px rgba(139, 77, 255, .2);
+  background-size: cover;
+  background-position: center bottom;
+}
+.ja-mascot__eyes {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 34px;
+}
+.ja-mascot__eye {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 34px 10px rgba(34, 230, 224, .55);
+  animation: ja-eye calc(6s * var(--motion)) linear infinite;
+}
+.ja-mascot__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: .24em;
+  color: rgba(234, 234, 242, .5);
+}
+.ja-mascot__caption span { display: block; font-size: 16px; letter-spacing: .16em; margin-top: 8px; color: rgba(234, 234, 242, .35); }
+.ja-mascot__steam { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); gap: 12px; height: 60px; }
+/* A real mascot.png replaces the whole placeholder treatment. */
+.ja-mascot.has-asset {
+  background-image: var(--asset-image);
+  border: none;
+  box-shadow: none;
+}
+.ja-mascot.has-asset .ja-mascot__eyes,
+.ja-mascot.has-asset .ja-mascot__caption,
+.ja-mascot.has-asset .ja-mascot__steam { display: none; }
+
+/* ---------- SceneShell : glow field + grid + border ---------- */
+.ja-scene { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
+.ja-scene__glow {
+  position: absolute;
+  inset: -4%;
+  animation: ja-drift calc(26s * var(--motion)) ease-in-out infinite;
+}
+.ja-scene__grid {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 4px);
+}
+.ja-scene__vignette { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 15, .35), rgba(10, 10, 15, .8)); }
+.ja-scene__border {
+  position: absolute;
+  left: 120px;
+  top: 120px;
+  right: 120px;
+  bottom: 120px;
+  border: var(--hairline-w) solid rgba(139, 77, 255, .22);
+  border-radius: var(--radius-lg);
+}
+/* A background jpg drops in behind the glow field without touching scene code. */
+.ja-scene__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  display: none;
+}
+.ja-scene__bg.has-asset { display: block; background-image: var(--asset-image); }
+
+.ja-scene__headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 118px;            /* §09 scene headline 118 */
+  line-height: .94;
+  letter-spacing: -.01em;
+  color: var(--text-1);
+  text-shadow: 0 0 44px rgba(139, 77, 255, .45);
+}
+.ja-gradient-text {
+  background: linear-gradient(96deg, var(--purple) 0%, var(--violet) 38%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- TerminalLine : typed text + block caret ---------- */
+.ja-terminal {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  letter-spacing: .14em;
+  color: var(--text-2);
+}
+.ja-terminal__caret {
+  display: inline-block;
+  width: 12px;
+  height: 26px;
+  background: var(--cyan);
+  vertical-align: -5px;
+  margin-left: 8px;
+  animation: ja-caret calc(1.1s * var(--motion)) steps(1) infinite;
+}
+
+/* ---------- Countdown : mono clock ---------- */
+.ja-countdown {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 28px;
+  background: rgba(14, 14, 20, .8);
+  border: var(--hairline-w) solid rgba(34, 230, 224, .34);
+  border-radius: 2px 18px 2px 18px;
+  box-shadow: 0 0 30px rgba(34, 230, 224, .14);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 56px;
+  color: var(--text-1);
+  letter-spacing: .06em;
+}
+
+/* ---------- Stinger : 260ms glitch wipe on scene change ---------- */
+.ja-stinger {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 999;
+}
+.ja-stinger.is-firing { animation: ja-glitch-shift 260ms steps(3); }
+.ja-stinger.is-firing .ja-stinger__wipe {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--violet), var(--cyan), transparent);
+  opacity: .9;
+  animation: ja-glitch-wipe 260ms var(--ease);
+}
+.ja-stinger.is-firing .ja-stinger__scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .12) 0 2px, transparent 2px 6px);
+  mix-blend-mode: screen;
+}
+
+/* ---------- mono label utility ---------- */
+.ja-label {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: .24em;
+  color: var(--text-2);
+}
+.ja-label--cyan { color: var(--cyan); }
+.ja-label--lg   { font-size: 16px; }

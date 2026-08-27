@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JON_AI_CTRL — BrandBar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/base.css">
+<link rel="stylesheet" href="../src/css/components.css">
+</head>
+<body>
+<script type="module">
+/* BrandBar — 344 x 76. Browser source: 344 x 76. */
+import config from '../config.js';
+import { startModule } from '../src/js/scene.js';
+import { brandBar } from '../src/js/components.js';
+
+startModule(config, {
+  width: 344,
+  height: 76,
+  render(state) {
+    return state.modules.brandBar ? brandBar(state) : '';
+  },
+});
+</script>
+</body>
+</html>

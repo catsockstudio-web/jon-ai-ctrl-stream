@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JON_AI_CTRL — 03 Just Chatting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/base.css">
+<link rel="stylesheet" href="../src/css/components.css">
+</head>
+<body>
+<script type="module">
+/* 03 / JUST CHATTING — camera-led layout, same tokens, different weighting. */
+import config from '../config.js';
+import { startScene } from '../src/js/scene.js';
+import { avatar, chatBox, webcamFrame, infoTile, goalBar, stinger } from '../src/js/components.js';
+
+startScene(config, {
+  opaque: true,
+  alerts: true,
+  render(state) {
+    const { modules, channel, stream, activity, goals } = state;
+    const live = Boolean(stream.startedAt);
+    return `
+      <div class="ja-scene__glow" style="background:radial-gradient(60% 55% at 30% 25%,rgba(139,77,255,.24),transparent 60%),radial-gradient(55% 55% at 85% 80%,rgba(34,230,224,.16),transparent 58%);animation-duration:calc(30s * var(--motion))"></div>
+      <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 5px)"></div>
+
+      <div style="position:absolute;left:56px;top:48px;display:flex;align-items:center;gap:16px">
+        ${avatar({ size: 52 })}
+        <div style="font-family:var(--font-display);font-weight:700;font-size:34px;letter-spacing:.06em;color:var(--text-1)">${channel.wordmark}</div>
+        <div style="width:1px;height:34px;background:rgba(255,255,255,.14)"></div>
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:16px;letter-spacing:.24em;color:var(--cyan)">
+          <span class="ja-dot${live ? '' : ' ja-dot--offline'}"></span>${channel.showName} // ${live ? 'ONLINE' : 'OFFLINE'}
+        </div>
+      </div>
+
+      <div style="position:absolute;left:56px;top:150px;width:1160px;padding:26px 32px;background:rgba(14,14,20,.76);border:var(--hairline-w) solid var(--hairline);border-left:3px solid var(--purple);border-radius:2px 20px 2px 20px">
+        <div style="font-family:var(--font-mono);font-size:15px;letter-spacing:.28em;color:var(--text-2)">TODAY'S TOPIC</div>
+        <div style="font-family:var(--font-display);font-weight:600;font-size:44px;color:var(--text-1);margin-top:10px;line-height:1.1">${stream.topic}</div>
+      </div>
+
+      <div style="position:absolute;left:56px;top:300px">
+        ${webcamFrame(state, { width: 1160, height: 652, ticks: 22 })}
+      </div>
+
+      ${modules.chat ? `
+        <div style="position:absolute;right:56px;top:150px">${chatBox(state, { width: 552, height: 640, meta: '42 ONLINE' })}</div>` : ''}
+
+      ${modules.activityTiles || modules.goalRail ? `
+        <div style="position:absolute;right:56px;bottom:128px;width:552px;display:flex;flex-direction:column;gap:14px">
+          ${modules.activityTiles ? `
+            <div style="display:flex;gap:14px">
+              <div style="flex:1">${infoTile({ ...activity.follower, kicker: 'FOLLOWER' }, { width: null })}</div>
+              <div style="flex:1">${infoTile({ ...activity.sub, kicker: 'SUBSCRIBER' }, { width: null })}</div>
+            </div>` : ''}
+          ${modules.goalRail ? goalBar(goals.follower, { label: goals.follower.label, valueText: `${Math.round(goals.follower.current / goals.follower.target * 100)}%` }) : ''}
+        </div>` : ''}
+
+      <div style="position:absolute;left:56px;bottom:44px;display:flex;gap:26px;font-family:var(--font-mono);font-size:17px;letter-spacing:.22em;color:var(--text-2)">
+        <span>${channel.handle.toUpperCase()}</span>
+        ${channel.commands.map((c) => `<span style="color:rgba(255,255,255,.2)">·</span><span>${c}</span>`).join('')}
+      </div>
+      ${stinger()}
+    `;
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+/* ============================================================
+   Base: reset, stage scaling, and the §08 motion language.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;               /* OBS sources never scroll */
+  font-family: var(--font-ui);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Overlay pages composite over game capture: the page itself must be
+   transparent. Full-screen scenes opt back in with .scene--opaque. */
+body { background: transparent; }
+body.scene--opaque { background: var(--bg); }
+
+/* Nothing in an overlay is interactive; OBS should never see a cursor
+   or a text selection. The control page re-enables both. */
+body:not(.control) {
+  cursor: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- stage ----------
+   Every scene is authored at 1:1 in a 1920x1080 box. stage.js measures
+   the window and sets --stage-scale; the transform does the rest, so a
+   1440p or 720p source is the same pixels at a different scale. */
+.stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: top left;
+  transform: scale(var(--stage-scale));
+}
+
+/* ---------- §08 motion language ----------
+   All durations are multiplied by --motion so the master gate can flatten
+   the package. A 0s duration parks the animation on its first keyframe. */
+
+/* EDGE TRACE — 25%-width cyan sliver along a panel's top border. */
+@keyframes ja-trace-x { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+@keyframes ja-trace-y { 0% { transform: translateY(-100%); } 100% { transform: translateY(500%); } }
+
+/* STATUS BREATH — the only always-on motion on the gameplay scene. */
+@keyframes ja-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.8); }
+}
+
+/* EYE GLOW — hold full, 120ms dip every 6-7s. */
+@keyframes ja-eye { 0%, 92%, 100% { opacity: 1; } 95% { opacity: .25; } }
+
+/* STEAM — three bars rise 22px, staggered .8s. */
+@keyframes ja-steam {
+  0%   { opacity: 0;   transform: translateY(6px)   scaleY(.6); }
+  35%  { opacity: .75; }
+  100% { opacity: 0;   transform: translateY(-22px) scaleY(1.2); }
+}
+
+/* CAM SCAN — 60px cyan wash, top to bottom, under the video. */
+@keyframes ja-scan { 0% { transform: translateY(-20%); } 100% { transform: translateY(120%); } }
+
+/* SLOW GRADIENT — transform only, so OBS CPU stays flat. */
+@keyframes ja-drift {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(-2%, -1.5%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* GOAL SHIMMER */
+@keyframes ja-fill { 0% { opacity: .55; } 50% { opacity: 1; } 100% { opacity: .55; } }
+
+/* TERMINAL TYPE — 1.1s block caret. */
+@keyframes ja-caret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* ALERT entrance/exit (§07): down 24px + fade 320ms; out fade + 12px up 260ms. */
+@keyframes ja-alert-in {
+  from { opacity: 0; transform: translateY(-24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ja-alert-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-12px); }
+}
+
+/* EYE BLOOM — 180ms flash to 1.4x glow radius when an alert lands. */
+@keyframes ja-eye-bloom {
+  0%   { box-shadow: 0 0 14px currentColor; }
+  50%  { box-shadow: 0 0 20px currentColor, 0 0 34px currentColor; }
+  100% { box-shadow: 0 0 14px currentColor; }
+}
+
+/* SCENE GLITCH — 260ms stinger: RGB offset, scanline shear, violet->cyan wipe. */
+@keyframes ja-glitch-shift {
+  0%   { transform: translate(0, 0);     filter: none; }
+  20%  { transform: translate(2px, -1px); }
+  40%  { transform: translate(-2px, 1px); }
+  60%  { transform: translate(1px, 0); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes ja-glitch-wipe {
+  0%   { opacity: 0; transform: translateX(-100%); }
+  30%  { opacity: .9; }
+  100% { opacity: 0; transform: translateX(100%); }
+}

@@ -1,0 +1,75 @@
+/* ============================================================
+   JON_AI_CTRL — design tokens
+   Source of truth: "JON_AI_CTRL Stream Package.dc.html" §09.
+   Every value here is literal from the handoff sheet. Do not
+   invent tokens; add them to the design first.
+   ============================================================ */
+
+:root {
+  /* --- colour system (10 swatches, §1a) --- */
+  --bg:        #0A0A0F;   /* canvas  */
+  --panel:     #13131C;   /* panel   */
+  --violet:    #8B4DFF;
+  --purple:    #B95CF0;
+  --cyan:      #22E6E0;
+  --blue:      #6FD4FF;
+  --magenta:   #E256C8;
+  --amber:     #F0A855;   /* "grind amber" */
+  --text-1:    #EAEAF2;
+  --text-2:    #8E8FA6;
+
+  /* --- surfaces --- */
+  --panel-bg:      rgba(19, 19, 28, .82);
+  --panel-blur:    6px;
+  --hairline:      rgba(139, 77, 255, .30);
+  --hairline-soft: rgba(255, 255, 255, .08);
+
+  /* --- edges --- */
+  --accent-edge: 2px;
+  --rule:        1px;
+  --radius:      2px 18px 2px 18px;   /* hybrid */
+  --radius-sm:   2px 12px 2px 12px;
+  --radius-lg:   4px 28px 4px 28px;
+
+  /* --- glows --- */
+  --glow-violet: 0 0 28px rgba(139, 77, 255, .18);
+  --glow-cyan:   0 0 24px rgba(34, 230, 224, .22);
+  --glow-alert:  0 0 44px rgba(139, 77, 255, .30);
+
+  /* --- space scale --- */
+  --space-1:  8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 56px;
+
+  /* --- motion --- */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  /* Master motion gate (§08 REDUCED MOTION). 1 = animated, 0 = flat.
+     Every animation in this package multiplies its duration by this,
+     so setting it to 0 freezes the entire overlay for laggy scenes. */
+  --motion: 1;
+
+  /* --- type --- */
+  --font-display: 'Chakra Petch', 'Eurostile', 'Rajdhani', system-ui, sans-serif;
+  --font-ui:      'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', 'Consolas', ui-monospace, monospace;
+
+  /* --- stage --- */
+  /* Set by stage.js. 1 at 1920x1080; w/1920 at any other width.
+     Hairlines divide by this so a 1px rule stays 1 physical px. */
+  --stage-scale: 1;
+  --hairline-w: calc(var(--rule) / var(--stage-scale));
+  --accent-w:   calc(var(--accent-edge) / var(--stage-scale));
+}
+
+/* Motion gate. Durations are authored as calc(<t> * var(--motion)); a
+   0 multiplier collapses them to 0s, which parks every animation on its
+   first frame without any scene needing to know it happened. */
+:root[data-motion="0"] { --motion: 0; }
+
+/* Respect the viewer's OS setting too — OBS ignores it, but the control
+   page preview and any browser preview honour it. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="1"]) { --motion: 0; }
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JON_AI_CTRL — SystemStrip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/base.css">
+<link rel="stylesheet" href="../src/css/components.css">
+</head>
+<body>
+<script type="module">
+/* SystemStrip — h44, width follows content. Browser source: 420 x 44. */
+import config from '../config.js';
+import { startModule } from '../src/js/scene.js';
+import { systemStrip } from '../src/js/components.js';
+
+startModule(config, {
+  width: 420,
+  height: 44,
+  render(state) {
+    return state.modules.systemStrip ? `<div style="display:flex;justify-content:flex-end">${systemStrip(state)}</div>` : '';
+  },
+});
+</script>
+</body>
+</html>

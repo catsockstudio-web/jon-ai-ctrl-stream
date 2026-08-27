@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JON_AI_CTRL — 05 Ending</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/base.css">
+<link rel="stylesheet" href="../src/css/components.css">
+</head>
+<body>
+<script type="module">
+/* 05 / ENDING — full 1920 x 1080. Sheet values x (1920/944), as with BRB. */
+import config from '../config.js';
+import { startScene } from '../src/js/scene.js';
+import { stinger } from '../src/js/components.js';
+import { typeOn } from '../src/js/widgets.js';
+
+const BOOT_LINE = '> shutting down morning_grind · see you tomorrow';
+
+startScene(config, {
+  opaque: true,
+  render(state) {
+    return `
+      <div class="ja-scene__bg" data-asset="endingBackground"></div>
+      <div class="ja-scene__glow" style="inset:-6%;background:radial-gradient(70% 70% at 50% 60%,rgba(139,77,255,.24),transparent 62%);animation-duration:calc(34s * var(--motion))"></div>
+      <div class="ja-scene__grid" style="background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 5px)"></div>
+
+      <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:41px">
+        <div style="font-family:var(--font-mono);font-size:31px;letter-spacing:.34em;color:var(--text-2)">SESSION COMPLETE</div>
+        <div class="ja-scene__headline" style="font-size:171px;line-height:.95">THANKS FOR<br>THE GRIND</div>
+        <div style="width:366px;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
+        <div class="ja-terminal" style="font-size:35px;letter-spacing:.2em"><span data-bind="terminal-text">${BOOT_LINE}</span></div>
+        <div style="display:flex;align-items:center;gap:24px;margin-top:12px;font-family:var(--font-mono);font-size:31px;letter-spacing:.24em;color:var(--cyan)">
+          <span class="ja-dot" style="width:16px;height:16px;animation-duration:calc(2.8s * var(--motion))"></span>${state.channel.handle.toUpperCase()}
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,transparent,var(--violet),var(--cyan),transparent);opacity:.6"></div>
+      ${stinger()}
+    `;
+  },
+  onRender(state, stage) {
+    typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+  },
+});
+</script>
+</body>
+</html>
