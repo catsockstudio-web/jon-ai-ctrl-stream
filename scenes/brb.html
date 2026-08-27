@@ -35,7 +35,7 @@ startScene(config, {
         <div style="position:absolute;left:114px;top:114px;right:114px;bottom:114px;border:var(--hairline-w) solid rgba(139,77,255,.2);border-radius:3px 20px 3px 20px"></div>
       `)}
 
-      <div style="position:absolute;left:195px;top:325px;width:875px;display:flex;flex-direction:column;gap:37px">
+      <div data-fit-col style="position:absolute;left:195px;top:325px;width:875px;display:flex;flex-direction:column;gap:37px">
         <div style="font-family:var(--font-mono);font-size:31px;letter-spacing:.32em;color:var(--amber)">STATUS // REFILLING</div>
         <div class="ja-scene__headline" style="font-size:159px">BE RIGHT<br><span style="background:linear-gradient(96deg,var(--amber),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent">BACK</span></div>
         ${terminalLine(BOOT_LINE, { size: 35 })}
@@ -56,13 +56,23 @@ startScene(config, {
         <div class="ja-mascot__caption" style="bottom:53px;font-size:31px">brb-art.png<span style="font-size:26px">mug / mascot · optional</span></div>
       </div>
 
-      <div style="position:absolute;left:195px;bottom:163px;font-family:var(--font-mono);font-size:28px;letter-spacing:.24em;color:var(--text-2)">${state.channel.wordmark} · CHAT AMONGST YOURSELVES</div>
+      <div data-footer style="position:absolute;left:195px;bottom:163px;font-family:var(--font-mono);font-size:28px;letter-spacing:.24em;color:var(--text-2)">${state.channel.wordmark} · CHAT AMONGST YOURSELVES</div>
       ${stinger()}
     `;
   },
   onRender(state, stage) {
     typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
-    fitToHeight(stage.querySelector('.ja-scene__headline'), 340, { minSize: 90 });
+    /* The column has to clear the footer. Its natural height depends on the
+       loaded fonts — with fallback faces the label, terminal and progress rows
+       all run taller than the sheet's metrics and the column grows into the
+       footer. Measure the real gap rather than hardcoding one, and let the
+       headline give until the whole column fits. */
+    const column = stage.querySelector('[data-fit-col]');
+    const footer = stage.querySelector('[data-footer]');
+    if (column && footer) {
+      const budget = footer.getBoundingClientRect().top - column.getBoundingClientRect().top - 24;
+      fitToHeight(stage.querySelector('.ja-scene__headline'), budget, { minSize: 90, measure: column });
+    }
   },
 });
 </script>

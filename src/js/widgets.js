@@ -105,7 +105,18 @@ export function fireStinger(root) {
    ------------------------------------------------------------ */
 export function typeOn(el, text, { charsPerSecond = 28, motion = true } = {}) {
   if (!el) return () => {};
-  if (!motion) { el.textContent = text; return () => {}; }
+
+  /* Reserve the finished line's height before typing starts. A boot line long
+     enough to wrap would otherwise grow the block mid-animation and shove
+     everything below it down — and anything measuring the layout while typing
+     is in flight (the fit guards) would measure the short version. Set the
+     text once, lock the height, then animate inside that space. */
+  el.textContent = text;
+  const host = el.closest('.ja-terminal') ?? el.parentElement ?? el;
+  const reserved = host.getBoundingClientRect().height;
+  if (reserved > 0) host.style.minHeight = `${reserved}px`;
+
+  if (!motion) return () => {};
 
   let index = 0;
   el.textContent = '';
@@ -130,8 +141,12 @@ export function typeOn(el, text, { charsPerSecond = 28, motion = true } = {}) {
    With the intended font it fits on the first measurement and
    does nothing at all.
    ------------------------------------------------------------ */
-export function fitToHeight(el, maxHeight, { minSize = 48, step = 2 } = {}) {
-  if (!el || !maxHeight) return;
+export function fitToHeight(el, maxHeight, { minSize = 48, step = 2, measure = null } = {}) {
+  if (!el || !maxHeight || maxHeight < 0) return;
+  /* Usually the element being scaled is the one that must fit. Sometimes it
+     is not: on BRB the headline is what can give, but the whole column is
+     what has to clear the footer. `measure` names the element to check. */
+  const target = measure ?? el;
 
   /* The authored size, captured before any shrinking. Scenes set this
      inline (BRB and Ending are larger than the stylesheet's default), so
@@ -144,7 +159,7 @@ export function fitToHeight(el, maxHeight, { minSize = 48, step = 2 } = {}) {
     let size = authored;
     el.style.fontSize = `${size}px`;
     /* Bounded: worst case (authored - minSize) / step iterations. */
-    while (el.getBoundingClientRect().height > maxHeight && size > minSize) {
+    while (target.getBoundingClientRect().height > maxHeight && size > minSize) {
       size -= step;
       el.style.fontSize = `${size}px`;
     }
