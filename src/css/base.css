@@ -130,3 +130,15 @@ body:not(.control) {
   30%  { opacity: .9; }
   100% { opacity: 0; transform: translateX(100%); }
 }
+
+/* Package-wide scanline wash, driven by the theme's scanline intensity.
+   Zero by default; it is a look, not a default. */
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  opacity: var(--scanline-opacity, 0);
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .5) 0 1px, transparent 1px 3px);
+}

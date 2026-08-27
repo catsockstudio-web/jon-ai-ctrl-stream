@@ -28,6 +28,7 @@ import { readFile, writeFile, stat, mkdir, readdir, unlink } from 'node:fs/promi
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
+import { defaults, migrate, SCHEMA_VERSION } from './src/js/schema.js';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 /* Where settings persist. Overridable with --state so a second instance —
@@ -40,8 +41,10 @@ const STATE_FILE = (() => {
 
 const args = process.argv.slice(2);
 const stateFlag = args.indexOf('--state');
-/* Skip the value that follows --state when hunting for the port. */
-const PORT = Number(args.find((a, i) => /^\d+$/.test(a) && i !== stateFlag + 1)) || 8787;
+/* Skip the value that follows --state when hunting for the port — but only
+   when the flag is actually present, or index 0 would be excluded and a bare
+   `node server.mjs 9000` would silently fall back to the default port. */
+const PORT = Number(args.find((a, i) => /^\d+$/.test(a) && (stateFlag === -1 || i !== stateFlag + 1))) || 8787;
 const hostFlag = args.indexOf('--host');
 /* Localhost-only by default. Pass --host 0.0.0.0 deliberately to run the
    control page from another machine on your LAN. */
@@ -74,20 +77,7 @@ function sniffImage(buffer) {
 
 /* ---------- state ---------- */
 
-function initialState() {
-  return {
-    channel:  { ...config.channel },
-    stream:   { ...config.stream },
-    caffeine: { ...config.caffeine },
-    goals:    structuredClone(config.goals),
-    activity: structuredClone(config.activity),
-    modules:  { ...config.modules },
-    display:  { ...config.display },
-    theme:    { ...config.theme },
-    branding: { ...config.branding },
-    chat:     { messages: [...config.chat.demoMessages], maxMessages: config.chat.maxMessages },
-  };
-}
+const initialState = () => defaults(config);
 
 /** Deep-merge plain objects; arrays and scalars replace wholesale. */
 function merge(base, patch) {
@@ -112,7 +102,13 @@ const STALE_STREAM_MS = 24 * 60 * 60 * 1000;
 async function loadPersisted() {
   try {
     const saved = JSON.parse(await readFile(STATE_FILE, 'utf8'));
-    state = merge(initialState(), saved);
+    const savedVersion = Number(saved.version) || 1;
+    /* Old settings are carried forward explicitly rather than being merged
+       into a shape they predate — see migrate() in src/js/schema.js. */
+    state = merge(initialState(), migrate(saved, config));
+    if (savedVersion < SCHEMA_VERSION) {
+      console.log(`  migrated saved settings from schema v${savedVersion} to v${SCHEMA_VERSION}`);
+    }
     if (state.stream?.startedAt && Date.now() - state.stream.startedAt > STALE_STREAM_MS) {
       state.stream.startedAt = null;
     }
@@ -133,6 +129,13 @@ function persist() {
       console.error('  could not write state.json:', err.message);
     }
   }, 250);
+}
+
+/** Replace one branch of a state tree, returning a new object. */
+function setBranch(root, path, value) {
+  if (path.length === 0) return value;
+  const [head, ...rest] = path;
+  return { ...root, [head]: setBranch(root?.[head] ?? {}, rest, value) };
 }
 
 /* ---------- SSE ---------- */
@@ -329,16 +332,35 @@ const server = createServer(async (req, res) => {
 
   /* ---- theme reset ---- */
   if (path === '/api/theme/reset' && req.method === 'POST') {
-    const theme = { ...config.theme };
-    state = merge(state, { theme });
+    const theme = defaults(config).theme;
+    /* Replace rather than merge: a reset must clear values, not layer over them. */
+    state = { ...state, theme };
     persist();
     broadcast('patch', { theme });
     json(res, 200, { ok: true, theme });
     return;
   }
 
+  /* Reset one branch of state: /api/reset/chat, /api/reset/alerts.tip, ... */
+  if (path.startsWith('/api/reset/') && req.method === 'POST') {
+    const branch = decodeURIComponent(path.slice('/api/reset/'.length));
+    if (!/^[\w.]+$/.test(branch)) { json(res, 400, { error: 'bad branch' }); return; }
+    const fresh = branch.split('.').reduce((acc, key) => acc?.[key], defaults(config));
+    if (fresh === undefined) { json(res, 404, { error: `no defaults for "${branch}"` }); return; }
+    const patch = branch.split('.').reverse().reduce((acc, key) => ({ [key]: acc }), fresh);
+    /* Replace the branch outright so removed keys do not survive the reset. */
+    state = setBranch(state, branch.split('.'), fresh);
+    persist();
+    broadcast('state', state);
+    json(res, 200, { ok: true, branch, value: fresh });
+    return;
+  }
+
   if (path === '/api/reset' && req.method === 'POST') {
-    state = initialState();
+    /* Uploaded artwork is the user's own and is never destroyed by a settings
+       reset — only the explicit per-slot Clear removes a file. */
+    const branding = state.branding;
+    state = { ...initialState(), branding };
     persist();
     broadcast('state', state);
     json(res, 200, { ok: true });

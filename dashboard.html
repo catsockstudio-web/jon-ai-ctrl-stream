@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="src/css/tokens.css">
 <link rel="stylesheet" href="src/css/base.css">
 <link rel="stylesheet" href="src/css/components.css">
+<link rel="stylesheet" href="src/css/effects.css">
 <link rel="stylesheet" href="src/css/dashboard.css">
 </head>
 <body class="dash">
@@ -33,6 +34,13 @@
     <section class="dash-preview">
       <div class="dash-preview__frame"><iframe id="preview" title="Scene preview"></iframe></div>
       <div class="dash-scenes" id="scene-tabs"></div>
+      <div class="dash-preview__tools">
+        <span class="dash-demo-tag">DEMO DATA</span>
+        <button class="ctl-btn" id="test-alert">TEST ALERT</button>
+        <button class="ctl-btn" id="test-chat">ADD CHAT</button>
+        <button class="ctl-btn" id="test-goal">+ GOAL</button>
+        <button class="ctl-btn ctl-btn--ghost" id="reset-preview">RESET PREVIEW</button>
+      </div>
       <p class="dash-panel__intro" style="margin:0">
         The checkerboard is transparency — game capture and your camera show through there.
         Changes apply to every open OBS source the moment you make them.
@@ -102,57 +110,8 @@
           </div>
         </div>
 
-        <!-- ======== THEME ======== -->
-        <div class="dash-section" data-section="theme">
-          <p class="dash-panel__intro">
-            A deliberately small set of safe controls. These recolour and calm the package;
-            they cannot move anything or change the layout, so there is nothing here you can
-            break. <strong>Reset</strong> puts everything back.
-          </p>
-          <div class="dash-grid">
-            <div class="ctl-card">
-              <div class="ctl-card__title">ACCENTS</div>
-              <div class="ctl-field">
-                <label class="ctl-field__label" for="accent">PRIMARY — panels, borders, violet gradients</label>
-                <div class="dash-swatch"><input type="color" id="accent" data-theme="accent"><code id="accent-hex">#8B4DFF</code></div>
-              </div>
-              <div class="ctl-field">
-                <label class="ctl-field__label" for="accentAlt">SECONDARY — highlights, live dot, cyan traces</label>
-                <div class="dash-swatch"><input type="color" id="accentAlt" data-theme="accentAlt"><code id="accentAlt-hex">#22E6E0</code></div>
-              </div>
-              <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">
-                Amber and magenta stay fixed — they mean money and bits, so recolouring them
-                would make alerts harder to read at a glance.
-              </p>
-            </div>
-
-            <div class="ctl-card">
-              <div class="ctl-card__title">FEEL</div>
-              <div class="ctl-field">
-                <label class="ctl-field__label" for="glow">GLOW STRENGTH — <span id="glow-readout">1.00</span></label>
-                <input type="range" id="glow" data-theme="glow" min="0" max="2" step="0.05">
-              </div>
-              <div class="ctl-field">
-                <label class="ctl-field__label" for="background">BACKGROUND BRIGHTNESS — <span id="background-readout">1.00</span></label>
-                <input type="range" id="background" data-theme="background" min="0.6" max="1.4" step="0.02">
-              </div>
-              <div class="ctl-field">
-                <label class="ctl-field__label">MOTION</label>
-                <div class="dash-seg" id="motion-seg">
-                  <button data-motion="off">OFF</button>
-                  <button data-motion="reduced">REDUCED</button>
-                  <button data-motion="full">FULL</button>
-                </div>
-                <div class="ctl-toggle__hint" style="margin-top:8px">
-                  Reduced keeps the live dot and stills everything decorative — useful if OBS is working hard.
-                </div>
-              </div>
-              <div class="ctl-btn-row" style="margin-top:16px">
-                <button class="ctl-btn ctl-btn--ghost" id="theme-reset">RESET THEME</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- ======== THEME (generated) ======== -->
+        <div class="dash-section" data-section="theme"></div>
 
         <!-- ======== BRANDING ======== -->
         <div class="dash-section" data-section="branding">
@@ -177,47 +136,20 @@
           </div>
         </div>
 
-        <!-- ======== WIDGETS & DATA ======== -->
-        <div class="dash-section" data-section="widgets">
-          <p class="dash-panel__intro">
-            Which modules are on screen, and where their numbers come from.
-          </p>
-          <div class="dash-grid">
-            <div class="ctl-card">
-              <div class="ctl-card__title">MODULES</div>
-              <div class="ctl-toggle" data-toggle="modules.chat"><div><div class="ctl-toggle__label">Chat panel</div><div class="ctl-toggle__hint">Right column</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.brandBar"><div><div class="ctl-toggle__label">Brand bar</div><div class="ctl-toggle__hint">Top-left identity + live status</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.systemStrip"><div><div class="ctl-toggle__label">System strip</div><div class="ctl-toggle__hint">Uptime · caffeine · node</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.webcam"><div><div class="ctl-toggle__label">Webcam frame</div><div class="ctl-toggle__hint">Border, ticks, nameplate</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.activityTiles"><div><div class="ctl-toggle__label">Activity tiles</div><div class="ctl-toggle__hint">Follower · sub · tip</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.goalRail"><div><div class="ctl-toggle__label">Goal rail</div><div class="ctl-toggle__hint">Bottom edge progress</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="modules.alerts"><div><div class="ctl-toggle__label">Alerts</div><div class="ctl-toggle__hint">Off suppresses and clears the queue</div></div><span class="ctl-switch"></span></div>
-            </div>
+        <!-- ======== ALERTS (generated) ======== -->
+        <div class="dash-section" data-section="alerts"></div>
 
-            <div class="ctl-card">
-              <div class="ctl-card__title">SETUP AIDS</div>
-              <div class="ctl-toggle" data-toggle="display.showSafeArea"><div><div class="ctl-toggle__label">Safe-area guides</div><div class="ctl-toggle__hint">Turn off before going live</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="display.showSampleGameplay"><div><div class="ctl-toggle__label">Sample gameplay plate</div><div class="ctl-toggle__hint">Stand-in for game capture while positioning</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-toggle" data-toggle="display.showCameraPlaceholder"><div><div class="ctl-toggle__label">Camera placeholder</div><div class="ctl-toggle__hint">Covers a live camera — setup only</div></div><span class="ctl-switch"></span></div>
-              <div class="ctl-field" style="margin-top:14px">
-                <label class="ctl-field__label" for="chat-ground">CHAT GROUND</label>
-                <select id="chat-ground" data-path="display.chatGround">
-                  <option value="panel">Panel — 82% ground</option>
-                  <option value="transparent">Transparent — drop-shadowed type</option>
-                </select>
-              </div>
-            </div>
+        <!-- ======== CHAT (generated) ======== -->
+        <div class="dash-section" data-section="chat"></div>
 
-            <div class="ctl-card">
-              <div class="ctl-card__title">DATA SOURCES</div>
-              <div id="providers"></div>
-              <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">
-                Only the manual provider exists today — every number on screen is one you set here
-                or on Live Control. The others are planned, not connected; nothing is silently faked.
-              </p>
-            </div>
-          </div>
-        </div>
+        <!-- ======== GOALS (generated) ======== -->
+        <div class="dash-section" data-section="goals"></div>
+
+        <!-- ======== WIDGETS (generated) ======== -->
+        <div class="dash-section" data-section="widgets"></div>
+
+        <!-- ======== INTEGRATIONS (generated) ======== -->
+        <div class="dash-section" data-section="integrations"></div>
 
         <!-- ======== OBS SETUP ======== -->
         <div class="dash-section" data-section="obs">

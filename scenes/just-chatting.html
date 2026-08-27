@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@ import { fitToHeight } from '../src/js/widgets.js';
 startScene(config, {
   alerts: true,
   render(state) {
-    const { modules, channel, stream, activity, goals } = state;
+    const { widgets, channel, stream, activity, goals } = state;
     const live = Boolean(stream.startedAt);
     return `
       ${sceneGround(`
@@ -48,17 +49,17 @@ startScene(config, {
         ${webcamFrame(state, { width: CAMERA_OPENINGS.justChatting.width, height: CAMERA_OPENINGS.justChatting.height, ticks: 22 })}
       </div>
 
-      ${modules.chat ? `
+      ${state.chat.enabled ? `
         <div style="position:absolute;right:56px;top:150px">${chatBox(state, { width: 552, height: 640, meta: '42 ONLINE' })}</div>` : ''}
 
-      ${modules.activityTiles || modules.goalRail ? `
+      ${widgets.activity.enabled || widgets.goalRail.enabled ? `
         <div style="position:absolute;right:56px;bottom:128px;width:552px;display:flex;flex-direction:column;gap:14px">
-          ${modules.activityTiles ? `
+          ${widgets.activity.enabled ? `
             <div style="display:flex;gap:14px">
               <div style="flex:1">${infoTile({ ...activity.follower, kicker: 'FOLLOWER' }, { width: null })}</div>
               <div style="flex:1">${infoTile({ ...activity.sub, kicker: 'SUBSCRIBER' }, { width: null })}</div>
             </div>` : ''}
-          ${modules.goalRail ? goalBar(goals.follower, { label: goals.follower.label, valueText: `${Math.round(goals.follower.current / goals.follower.target * 100)}%` }) : ''}
+          ${widgets.goalRail.enabled ? goalBar(goals.items.follower, { state, label: goals.items.follower.label, valueText: `${Math.round(goals.items.follower.current / goals.items.follower.target * 100)}%` }) : ''}
         </div>` : ''}
 
       <div style="position:absolute;left:56px;bottom:44px;display:flex;gap:26px;font-family:var(--font-mono);font-size:17px;letter-spacing:.22em;color:var(--text-2)">

@@ -1,34 +1,49 @@
 /* ============================================================
-   dashboard.js — the guided control surface.
+   dashboard.js — the guided customiser.
 
-   Six sections over one shared store. Everything a section writes
-   goes through store.commit() / store.fireAlert(), so the server
-   stays the single owner of state and every OBS source sees the
-   change at once.
+   Ten pages over one shared store. Everything a page writes goes
+   through store.commit(), so the server stays the single owner of
+   state and every OBS source sees the change at once.
 
-   This is deliberately not a design editor: there is no canvas
-   editing, no dragging, and no way to reach layout or the §09
-   measurements. The controls that exist are bounded and reversible.
+   This is deliberately not a design editor: no canvas editing, no
+   dragging, no route to layout or the §09 measurements. Positions
+   are presets with authored margins and scales are clamped, so no
+   control here can push a widget off the canvas.
+
+   Pages are described as control lists (see controls.js) rather
+   than hand-written inputs — several hundred settings would
+   otherwise drift from the schema.
    ============================================================ */
 
 import config from '../../config.js';
 import { boot } from './providers/index.js';
 import { formatDuration, uptimeMs, caffeinePercent, goalPercent, goalReadout } from './format.js';
-import { applyTheme, normalizeTheme, THEME_DEFAULTS } from './theme.js';
+import { applyTheme, THEME_PRESETS } from './theme.js';
 import { assetUrl } from './assets.js';
+import { cards, card, bindControls, syncControls, readPath, patchFor } from './controls.js';
+import {
+  ALERT_TYPES, EFFECTS, GOAL_TYPES, PERFORMANCE, POSITIONS, POSITIONS_FOR,
+  SCALE_RANGE, TEMPLATE_TOKENS, DEMO_EVENT,
+} from './schema.js';
+import { suppressedEffects } from './resolve.js';
 
 const $ = (sel) => document.querySelector(sel);
-const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
 
-/* ---------- what exists ---------- */
+/* Which sub-item each multi-item page is showing. Local view state only —
+   never committed, because it is not something OBS needs to know. */
+const ui = { alertType: 'follower', goalKey: 'follower' };
 
 const SECTIONS = [
-  { id: 'live',     label: 'LIVE CONTROL' },
-  { id: 'theme',    label: 'THEME' },
-  { id: 'branding', label: 'BRANDING' },
-  { id: 'scenes',   label: 'SCENE EDITOR' },
-  { id: 'widgets',  label: 'WIDGETS & DATA' },
-  { id: 'obs',      label: 'OBS SETUP' },
+  { id: 'live',        label: 'LIVE CONTROL' },
+  { id: 'theme',       label: 'THEME' },
+  { id: 'branding',    label: 'BRANDING' },
+  { id: 'scenes',      label: 'SCENES' },
+  { id: 'alerts',      label: 'ALERTS' },
+  { id: 'chat',        label: 'CHAT' },
+  { id: 'goals',       label: 'GOALS' },
+  { id: 'widgets',     label: 'WIDGETS' },
+  { id: 'integrations',label: 'INTEGRATIONS' },
+  { id: 'obs',         label: 'OBS SETUP' },
 ];
 
 const SCENES = [
@@ -40,9 +55,6 @@ const SCENES = [
   { id: 'offline',       label: '6 OFFLINE',       file: 'scenes/offline.html',       obs: 'Offline' },
 ];
 
-/* Only text that is genuinely data-driven is offered. Headlines like
-   "THE MORNING GRIND IS STARTING SOON" are part of the design and are not
-   listed, rather than being shown as a field that does nothing. */
 const SCENE_FIELDS = {
   gameplay: [
     ['channel.wordmark', 'Wordmark', 'Brand bar, top left'],
@@ -59,12 +71,8 @@ const SCENE_FIELDS = {
     ['channel.wordmark', 'Wordmark', 'Header'],
     ['channel.handle', 'Handle', 'Footer'],
   ],
-  brb: [
-    ['channel.wordmark', 'Wordmark', 'Footer line'],
-  ],
-  ending: [
-    ['channel.handle', 'Handle', 'Below the divider'],
-  ],
+  brb: [['channel.wordmark', 'Wordmark', 'Footer line']],
+  ending: [['channel.handle', 'Handle', 'Below the divider']],
   offline: [
     ['channel.wordmark', 'Wordmark', 'The large gradient title'],
     ['channel.tagline', 'Tagline', 'Under the title'],
@@ -81,13 +89,6 @@ const BRANDING_SLOTS = [
   ['startingBackground', 'Starting Soon background', 'Full 1920 × 1080'],
   ['brbBackground', 'BRB background', 'Full 1920 × 1080'],
   ['endingBackground', 'Ending background', 'Full 1920 × 1080'],
-];
-
-const PROVIDERS = [
-  ['Manual (control panel)', 'Everything you set here. No account, no credentials.', true],
-  ['Twitch', 'EventSub for follows/subs/bits, IRC for chat.', false],
-  ['StreamElements', 'Socket API for activity and tips.', false],
-  ['Streamer.bot', 'Local WebSocket; no cloud credentials.', false],
 ];
 
 const MODULE_SOURCES = [
@@ -113,23 +114,300 @@ const GOAL_KEYS = [
 
 const store = await boot(config);
 
-/* ---------- helpers ---------- */
+/* ============================================================
+   Generated customisation pages.
+   Each page is a list of control descriptors; controls.js turns
+   them into inputs and wires them to the store. Basic controls
+   are visible, deeper ones sit behind ADVANCED.
+   ============================================================ */
 
-const patchFor = (path, value) => path.split('.').reverse().reduce((acc, key) => ({ [key]: acc }), value);
-const readPath = (obj, path) => path.split('.').reduce((acc, key) => acc?.[key], obj);
+const POS_ALL = POSITIONS;
 
-function copy(text, button) {
-  const done = () => { const old = button.textContent; button.textContent = 'COPIED'; setTimeout(() => { button.textContent = old; }, 1200); };
-  navigator.clipboard?.writeText(text).then(done).catch(() => {
-    /* clipboard API needs a secure context; a hidden textarea always works. */
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); done(); } finally { ta.remove(); }
-  });
+const effectControls = (base, key) => {
+  const meta = EFFECTS[key];
+  const ranges = {
+    intensity: [0, 2, 0.05], radius: [0, 60, 1], speed: [0.5, 10, 0.1], brightness: [0, 2, 0.05],
+    frequency: [0.5, 20, 0.5], opacity: [0, 1, 0.02], spacing: [1, 12, 1],
+    offsetX: [0, 12, 1], offsetY: [0, 12, 1], offset: [0, 24, 1], decay: [100, 1200, 20],
+    displacement: [0, 40, 1], curvature: [0, 1, 0.05], flicker: [0, 1, 0.05],
+  };
+  return [
+    { type: 'toggle', path: `${base}.${key}.on`, label: meta.label, hint: `${meta.cost} cost${meta.animated ? ' · animated' : ' · static'}` },
+    ...meta.controls.map((c) => {
+      const [min, max, step] = ranges[c] ?? [0, 1, 0.05];
+      return { type: 'range', path: `${base}.${key}.${c}`, label: c, min, max, step };
+    }),
+  ];
+};
+
+function alertsPage(state) {
+  const type = ui.alertType;
+  const base = `alerts.${type}`;
+  const cfg = state.alerts?.[type] ?? {};
+  const tabs = ALERT_TYPES.map((t) =>
+    `<button class="ctl-btn${t === type ? ' is-active' : ''}" data-alert-type="${t}">${t.toUpperCase()}</button>`).join('');
+
+  const basic = cards([
+    {
+      title: 'BASIC', reset: base,
+      controls: [
+        { type: 'toggle', path: `${base}.enabled`, label: 'Enabled' },
+        { type: 'text', path: `${base}.title`, label: 'Title text', hint: `Tokens: ${TEMPLATE_TOKENS.join(' ')}` },
+        { type: 'text', path: `${base}.template`, label: 'Main text' },
+        { type: 'text', path: `${base}.secondary`, label: 'Secondary / message' },
+        { type: 'range', path: `${base}.duration`, label: 'Duration (ms)', min: 1000, max: 15000, step: 250 },
+        { type: 'range', path: `${base}.scale`, label: 'Scale', min: SCALE_RANGE.alerts.min, max: SCALE_RANGE.alerts.max, step: 0.05 },
+        { type: 'position', path: `${base}.position`, label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.alerts },
+      ],
+      advanced: [
+        { type: 'toggle', path: `${base}.useThemeColors`, label: 'Use global theme colours', hint: 'Off lets this alert type carry its own' },
+        { type: 'color', path: `${base}.colors.primary`, label: 'Primary colour' },
+        { type: 'color', path: `${base}.colors.secondary`, label: 'Secondary colour' },
+        { type: 'color', path: `${base}.colors.text`, label: 'Text colour' },
+      ],
+    },
+    {
+      title: 'ANIMATION',
+      controls: [
+        { type: 'select', path: `${base}.entrance`, label: 'Entrance',
+          options: [['fade', 'Fade'], ['slide', 'Slide'], ['scale', 'Scale'], ['pop', 'Pop'], ['glitch', 'Signal Glitch'], ['scan', 'Scan Reveal'], ['none', 'None']] },
+        { type: 'select', path: `${base}.exit`, label: 'Exit',
+          options: [['fade', 'Fade'], ['slide', 'Slide'], ['glitch', 'Glitch Out'], ['collapse', 'Collapse'], ['none', 'None']] },
+        { type: 'range', path: `${base}.animationMs`, label: 'Animation duration (ms)', min: 80, max: 1200, step: 20 },
+      ],
+    },
+    {
+      title: 'ELEMENTS',
+      controls: Object.keys(cfg.elements ?? {}).map((k) => ({
+        type: 'toggle', path: `${base}.elements.${k}`, label: k[0].toUpperCase() + k.slice(1),
+      })),
+    },
+  ]);
+
+  const suppressed = suppressedEffects(state, cfg);
+  const warn = suppressed.length
+    ? `<div class="dash-warn">Switched on but not running right now: ${suppressed.map(([k, why]) => `<strong>${EFFECTS[k].label}</strong> (${why})`).join(', ')}.</div>`
+    : '';
+
+  const effects = `<div class="dash-grid">${Object.keys(EFFECTS).map((key) => card({
+    title: EFFECTS[key].label,
+    controls: [effectControls(`${base}.effects`, key)[0]],
+    advanced: effectControls(`${base}.effects`, key).slice(1),
+  })).join('')}</div>`;
+
+  return `
+    <p class="dash-panel__intro">Each alert type has its own settings. Text supports tokens like <code>{name}</code> and <code>{amount}</code>; an unknown token is left visible rather than silently dropped. Use <strong>Test Alert</strong> under the preview to see it.</p>
+    <div class="dash-scenes" style="margin-bottom:16px">${tabs}</div>
+    ${basic}
+    <div class="ctl-card__title" style="margin:26px 0 12px">EFFECT STACK ${warn}</div>
+    ${effects}`;
 }
 
-/* ---------- section nav ---------- */
+function chatPage(state) {
+  return `
+    <p class="dash-panel__intro">Chat is a widget like any other: it inherits the theme unless you tell it not to. Fonts are limited to the three already bundled with the package, so an overlay looks the same with the network unplugged.</p>
+    ${cards([
+      { title: 'BASIC', reset: 'chat', controls: [
+        { type: 'toggle', path: 'chat.enabled', label: 'Enabled' },
+        { type: 'segmented', path: 'chat.mode', label: 'Ground', options: [['panel', 'PANEL'], ['transparent', 'TRANSPARENT']] },
+        { type: 'range', path: 'chat.scale', label: 'Scale', min: SCALE_RANGE.chat.min, max: SCALE_RANGE.chat.max, step: 0.05 },
+        { type: 'position', path: 'chat.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.chat },
+        { type: 'range', path: 'chat.maxMessages', label: 'Max visible messages', min: 3, max: 20, step: 1 },
+      ]},
+      { title: 'TYPOGRAPHY', controls: [
+        { type: 'select', path: 'chat.typography.family', label: 'Font',
+          options: [['ui', 'Barlow — interface'], ['display', 'Chakra Petch — display'], ['mono', 'JetBrains Mono — data']] },
+        { type: 'range', path: 'chat.typography.size', label: 'Size (px)', min: 12, max: 34, step: 1 },
+      ], advanced: [
+        { type: 'range', path: 'chat.typography.weight', label: 'Weight', min: 400, max: 700, step: 100 },
+        { type: 'range', path: 'chat.typography.lineHeight', label: 'Line height', min: 1, max: 2, step: 0.05 },
+        { type: 'range', path: 'chat.typography.spacing', label: 'Message spacing (px)', min: 4, max: 32, step: 1 },
+      ]},
+      { title: 'COLOURS', controls: [
+        { type: 'toggle', path: 'chat.colors.useThemeColors', label: 'Use global theme colours' },
+        { type: 'select', path: 'chat.colors.usernameMode', label: 'Username colour',
+          options: [['provider', 'From provider'], ['theme', 'Theme accents'], ['single', 'One colour']] },
+      ], advanced: [
+        { type: 'color', path: 'chat.colors.usernameColor', label: 'Single username colour' },
+        { type: 'color', path: 'chat.colors.text', label: 'Message text' },
+        { type: 'color', path: 'chat.colors.background', label: 'Background' },
+        { type: 'range', path: 'chat.colors.backgroundOpacity', label: 'Background opacity', min: 0, max: 1, step: 0.02 },
+        { type: 'color', path: 'chat.colors.border', label: 'Border' },
+        { type: 'color', path: 'chat.colors.header', label: 'Header' },
+      ]},
+      { title: 'ELEMENTS', controls: [
+        { type: 'toggle', path: 'chat.elements.header', label: 'Header' },
+        { type: 'toggle', path: 'chat.elements.viewerCount', label: 'Viewer count' },
+        { type: 'toggle', path: 'chat.elements.rail', label: 'Scroll rail' },
+      ], advanced: [
+        { type: 'toggle', path: 'chat.elements.timestamps', label: 'Timestamps' },
+        { type: 'toggle', path: 'chat.elements.badges', label: 'Badges' },
+        { type: 'toggle', path: 'chat.elements.rounded', label: 'Rounded panel' },
+      ]},
+      { title: 'MESSAGE ANIMATION', controls: [
+        { type: 'select', path: 'chat.animation.style', label: 'Style',
+          options: [['none', 'None'], ['fade', 'Fade'], ['slide', 'Slide'], ['rise', 'Rise'], ['digital', 'Digital Reveal']] },
+        { type: 'range', path: 'chat.animation.speed', label: 'Speed (ms)', min: 60, max: 800, step: 20 },
+        { type: 'range', path: 'chat.animation.distance', label: 'Distance (px)', min: 0, max: 40, step: 1 },
+      ]},
+    ])}`;
+}
 
+function goalsPage(state) {
+  const key = ui.goalKey;
+  const base = `goals.items.${key}`;
+  const tabs = Object.keys(state.goals?.items ?? {}).map((k) =>
+    `<button class="ctl-btn${k === key ? ' is-active' : ''}" data-goal-key="${k}">${k.toUpperCase()}</button>`).join('');
+
+  return `
+    <p class="dash-panel__intro">One configurable component covers every goal — horizontal rail, vertical bar or the coffee mug. Changing any of this needs no HTML.</p>
+    <div class="dash-scenes" style="margin-bottom:16px">${tabs}</div>
+    ${cards([
+      { title: 'BASIC', reset: base, controls: [
+        { type: 'toggle', path: `${base}.enabled`, label: 'Enabled' },
+        { type: 'select', path: `${base}.type`, label: 'Goal type', options: GOAL_TYPES.map((t) => [t, t.toUpperCase()]) },
+        { type: 'text', path: `${base}.label`, label: 'Label' },
+        { type: 'number', path: `${base}.current`, label: 'Current', min: 0 },
+        { type: 'number', path: `${base}.target`, label: 'Target', min: 1 },
+        { type: 'range', path: `${base}.scale`, label: 'Scale', min: SCALE_RANGE.goal.min, max: SCALE_RANGE.goal.max, step: 0.05 },
+      ]},
+      { title: 'LAYOUT', controls: [
+        { type: 'segmented', path: `${base}.orientation`, label: 'Orientation', options: [['horizontal', 'HORIZONTAL'], ['vertical', 'VERTICAL']] },
+        { type: 'segmented', path: `${base}.alignment`, label: 'Alignment', options: [['left', 'LEFT'], ['center', 'CENTER'], ['right', 'RIGHT']] },
+        { type: 'select', path: `${base}.mode`, label: 'Style', options: [['rail', 'Rail'], ['segmented', 'Segmented'], ['mug', 'Mug']] },
+      ], advanced: [
+        { type: 'range', path: `${base}.thickness`, label: 'Bar thickness (px)', min: 2, max: 40, step: 1 },
+        { type: 'range', path: `${base}.radius`, label: 'Corner radius (px)', min: 0, max: 20, step: 1 },
+        { type: 'range', path: `${base}.segments`, label: 'Segment count', min: 4, max: 24, step: 1 },
+      ]},
+      { title: 'STYLE', controls: [
+        { type: 'toggle', path: `${base}.useThemeColors`, label: 'Use global theme colours' },
+      ], advanced: [
+        { type: 'color', path: `${base}.colors.primary`, label: 'Primary' },
+        { type: 'color', path: `${base}.colors.secondary`, label: 'Secondary' },
+        { type: 'color', path: `${base}.colors.text`, label: 'Text' },
+      ]},
+      { title: 'ELEMENTS', controls: Object.keys(state.goals?.items?.[key]?.elements ?? {}).map((k) => ({
+        type: 'toggle', path: `${base}.elements.${k}`, label: k[0].toUpperCase() + k.slice(1),
+      }))},
+    ])}`;
+}
+
+function widgetsPage(state) {
+  return `
+    <p class="dash-panel__intro">Placement and scale for the widgets that carry them. Positions are presets with authored safe margins — there is no freeform dragging, so nothing can be pushed off the canvas.</p>
+    ${cards([
+      { title: 'BRAND BAR', reset: 'widgets.brandBar', controls: [
+        { type: 'toggle', path: 'widgets.brandBar.enabled', label: 'Enabled' },
+        { type: 'position', path: 'widgets.brandBar.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.brandBar },
+        { type: 'range', path: 'widgets.brandBar.scale', label: 'Scale', min: SCALE_RANGE.brandBar.min, max: SCALE_RANGE.brandBar.max, step: 0.05 },
+      ]},
+      { title: 'SYSTEM STRIP', reset: 'widgets.systemStrip', controls: [
+        { type: 'toggle', path: 'widgets.systemStrip.enabled', label: 'Enabled' },
+        { type: 'position', path: 'widgets.systemStrip.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.systemStrip },
+      ]},
+      { title: 'GOAL RAIL', reset: 'widgets.goalRail', controls: [
+        { type: 'toggle', path: 'widgets.goalRail.enabled', label: 'Enabled' },
+        { type: 'select', path: 'goals.railGoal', label: 'Which goal', options: Object.keys(state.goals?.items ?? {}).map((k) => [k, k.toUpperCase()]) },
+        { type: 'position', path: 'widgets.goalRail.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.goal },
+      ]},
+      { title: 'ACTIVITY', reset: 'activity', controls: [
+        { type: 'toggle', path: 'activity.enabled', label: 'Enabled' },
+        { type: 'segmented', path: 'activity.mode', label: 'Mode', options: [['tiles', 'TILES'], ['list', 'RECENT EVENTS']] },
+        { type: 'range', path: 'activity.maxEvents', label: 'Max events', min: 1, max: 10, step: 1 },
+        { type: 'position', path: 'activity.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.activity },
+      ], advanced: [
+        { type: 'toggle', path: 'activity.compact', label: 'Compact rows' },
+        { type: 'toggle', path: 'activity.elements.icon', label: 'Icons' },
+        { type: 'toggle', path: 'activity.elements.label', label: 'Labels' },
+        { type: 'toggle', path: 'activity.elements.timestamp', label: 'Timestamps' },
+        { type: 'range', path: 'activity.scale', label: 'Scale', min: SCALE_RANGE.activity.min, max: SCALE_RANGE.activity.max, step: 0.05 },
+      ]},
+      { title: 'WEBCAM FRAME', reset: 'widgets.webcam', controls: [
+        { type: 'toggle', path: 'widgets.webcam.enabled', label: 'Enabled' },
+        { type: 'note', label: 'The webcam frame is not scalable: its opening is a transparent cutout at an authored position, and moving or resizing it would leave the camera behind it out of register.' },
+      ]},
+      { title: 'SETUP AIDS', controls: [
+        { type: 'toggle', path: 'display.showSafeArea', label: 'Safe-area guides', hint: 'Turn off before going live' },
+        { type: 'toggle', path: 'display.showSampleGameplay', label: 'Sample gameplay plate' },
+        { type: 'toggle', path: 'display.showCameraPlaceholder', label: 'Camera placeholder', hint: 'Covers a live camera — setup only' },
+      ]},
+    ])}`;
+}
+
+function integrationsPage(state) {
+  const rows = [
+    ['Manual (dashboard)', 'Everything you set here. No account, no credentials.', true],
+    ['Twitch', 'EventSub for follows/subs/bits, IRC for chat.', false],
+    ['StreamElements', 'Socket API for activity and tips.', false],
+    ['Streamer.bot', 'Local WebSocket; no cloud credentials.', false],
+  ].map(([name, hint, live]) => `
+    <div class="dash-status" style="border-left-color:${live ? 'var(--cyan)' : 'rgba(255,255,255,.2)'}">
+      <div><div class="dash-status__name">${name}</div><div class="dash-status__hint">${hint}</div></div>
+      <span class="dash-tag dash-tag--${live ? 'live' : 'planned'}">${live ? 'ACTIVE' : 'PLANNED'}</span>
+    </div>`).join('');
+
+  return `
+    <p class="dash-panel__intro">Where event data comes from. Styling never lives here — a provider supplies values like "follower = Adem", and everything visual stays in Theme, Alerts, Chat and Goals. That separation is what lets a live provider drop in without redoing any of your customisation.</p>
+    <div class="dash-grid">
+      <div class="ctl-card"><div class="ctl-card__title">DATA SOURCES</div>${rows}
+        <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">Only the manual provider exists today. Every number on screen is one you set — nothing is silently faked.</p>
+      </div>
+      <div class="ctl-card"><div class="ctl-card__title">PERFORMANCE</div>
+        <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">These overlays run while a game renders and video encodes. The preset caps how expensive an effect stack is allowed to be.</p>
+        ${['low', 'balanced', 'high'].map((k) => `<div class="dash-status"><div><div class="dash-status__name">${k.toUpperCase()}</div><div class="dash-status__hint">${PERFORMANCE[k].label}</div></div></div>`).join('')}
+        <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">Set it under <strong>Theme → Feel</strong>. LOW runs only compositor-cheap effects; CRT and Noise need HIGH.</p>
+      </div>
+      <div class="ctl-card"><div class="ctl-card__title">DANGER ZONE</div>
+        <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">Uploaded artwork is never removed by a settings reset — only the per-slot Clear on the Branding page deletes a file.</p>
+        <div class="ctl-btn-row">
+          <button class="ctl-btn ctl-btn--ghost" data-reset-branch="theme">RESET THEME</button>
+          <button class="ctl-btn ctl-btn--ghost" data-reset-branch="alerts">RESET ALL ALERTS</button>
+          <button class="ctl-btn ctl-btn--amber" id="reset-everything">RESET EVERYTHING</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function themePage(state) {
+  const presets = Object.entries(THEME_PRESETS).map(([k, v]) =>
+    `<button class="ctl-btn" data-preset="${k}">${v.label}</button>`).join('');
+  return `
+    <p class="dash-panel__intro">A small set of safe global controls. They recolour and calm the package; nothing here can move or resize anything. Widgets inherit these unless you switch a widget to its own colours.</p>
+    <div class="ctl-card" style="margin-bottom:16px">
+      <div class="ctl-card__title">PRESETS</div>
+      <div class="ctl-btn-row">${presets}</div>
+      <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">A preset just fills in the same values below — everything stays editable afterwards.</p>
+    </div>
+    ${cards([
+      { title: 'COLOURS', reset: 'theme.colors', controls: [
+        { type: 'color', path: 'theme.colors.primary', label: 'Primary accent' },
+        { type: 'color', path: 'theme.colors.secondary', label: 'Secondary accent' },
+        { type: 'color', path: 'theme.colors.highlight', label: 'Highlight / accent 3' },
+      ], advanced: [
+        { type: 'color', path: 'theme.colors.background', label: 'Background tone' },
+        { type: 'color', path: 'theme.colors.text', label: 'Main text' },
+        { type: 'color', path: 'theme.colors.textDim', label: 'Secondary text' },
+      ]},
+      { title: 'FEEL', reset: 'theme.intensity', controls: [
+        { type: 'range', path: 'theme.intensity.glow', label: 'Glow intensity', min: 0, max: 2, step: 0.05 },
+        { type: 'range', path: 'theme.intensity.backgroundBrightness', label: 'Background brightness', min: 0.6, max: 1.4, step: 0.02 },
+        { type: 'segmented', path: 'theme.motionLevel', label: 'Motion', options: [['off', 'OFF'], ['reduced', 'REDUCED'], ['full', 'FULL']] },
+        { type: 'segmented', path: 'theme.performance', label: 'Effect performance', options: [['low', 'LOW'], ['balanced', 'BALANCED'], ['high', 'HIGH']] },
+      ], advanced: [
+        { type: 'range', path: 'theme.intensity.panelOpacity', label: 'Panel opacity', min: 0.2, max: 1, step: 0.02 },
+        { type: 'range', path: 'theme.intensity.borderBrightness', label: 'Border brightness', min: 0.2, max: 2, step: 0.05 },
+        { type: 'range', path: 'theme.intensity.scanlines', label: 'Scanline intensity', min: 0, max: 0.6, step: 0.02 },
+        { type: 'range', path: 'theme.intensity.motion', label: 'Motion speed', min: 0, max: 1.5, step: 0.05 },
+      ]},
+    ])}`;
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+
+/* ---------- section nav ---------- */
 $('#nav').innerHTML = SECTIONS.map((s, i) =>
   `<button class="dash-nav__item${i === 0 ? ' is-active' : ''}" data-nav="${s.id}">${s.label}</button>`).join('');
 document.querySelector('.dash-section[data-section="live"]').classList.add('is-active');
@@ -142,7 +420,6 @@ $('#nav').addEventListener('click', (event) => {
 });
 
 /* ---------- scene preview ---------- */
-
 let activeScene = SCENES[0];
 $('#scene-tabs').innerHTML = SCENES.map((s) => `<button class="ctl-btn" data-scene="${s.id}">${s.label}</button>`).join('');
 
@@ -157,31 +434,95 @@ $('#scene-tabs').addEventListener('click', (event) => {
   if (id) selectScene(SCENES.find((s) => s.id === id));
 });
 
-/* ---------- bound inputs ---------- */
+/* ---------- generated pages ---------- */
+const PAGE_BUILDERS = {
+  theme: themePage,
+  alerts: alertsPage,
+  chat: chatPage,
+  goals: goalsPage,
+  widgets: widgetsPage,
+  integrations: integrationsPage,
+};
 
+/* Pages re-render when state changes, but only the one on screen and only
+   when its markup would actually differ — otherwise typing in a field would
+   rebuild the field under the cursor. */
+const lastHtml = {};
+function renderPages(state) {
+  for (const [id, build] of Object.entries(PAGE_BUILDERS)) {
+    const host = document.querySelector(`.dash-section[data-section="${id}"]`);
+    if (!host) continue;
+    const html = build(state);
+    if (html !== lastHtml[id]) { lastHtml[id] = html; host.innerHTML = html; }
+    syncControls(host, state);
+  }
+}
+
+/* ---------- resets ---------- */
+async function reset(kind, target) {
+  if (kind === 'control') {
+    /* One control: ask the server for that branch's default. */
+    await fetch(`/api/reset/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
+    return;
+  }
+  await fetch(`/api/reset/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
+}
+
+bindControls(document.querySelector('.dash-panel'), store, { onReset: reset });
+
+document.addEventListener('click', async (event) => {
+  const preset = event.target.closest('[data-preset]');
+  if (preset) {
+    const chosen = THEME_PRESETS[preset.dataset.preset];
+    if (chosen) store.commit({ theme: { colors: { ...chosen.colors }, preset: preset.dataset.preset } });
+    return;
+  }
+  const alertTab = event.target.closest('[data-alert-type]');
+  if (alertTab) { ui.alertType = alertTab.dataset.alertType; renderPages(store.state); return; }
+
+  const goalTab = event.target.closest('[data-goal-key]');
+  if (goalTab) { ui.goalKey = goalTab.dataset.goalKey; renderPages(store.state); return; }
+
+  if (event.target.closest('#reset-everything')) {
+    if (!confirm('Reset every setting to defaults?\n\nYour uploaded artwork is kept — only the Clear button on the Branding page removes a file.')) return;
+    await fetch('/api/reset', { method: 'POST' }).catch(() => {});
+  }
+});
+
+/* ---------- preview test data ---------- */
+$('#test-alert').addEventListener('click', () => {
+  const kind = ui.alertType;
+  store.fireAlert({ kind, ...DEMO_EVENT[kind] });
+});
+$('#test-chat').addEventListener('click', () => {
+  const demo = config.chat.demoMessages;
+  const msg = { ...demo[Math.floor(Math.random() * demo.length)], at: new Date().toTimeString().slice(0, 5) };
+  const messages = [msg, ...(store.state.chat.messages ?? [])].slice(0, 20);
+  store.commit({ chat: { messages } });
+});
+$('#test-goal').addEventListener('click', () => {
+  const key = ui.goalKey;
+  const goal = store.state.goals.items[key];
+  store.commit({ goals: { items: { [key]: { current: Math.min(goal.target, goal.current + Math.ceil(goal.target * 0.08)) } } } });
+});
+$('#reset-preview').addEventListener('click', () => {
+  store.commit({ chat: { messages: [...config.chat.demoMessages] } });
+});
+
+/* ---------- live control ---------- */
 for (const input of document.querySelectorAll('[data-path]')) {
   const isNumber = input.type === 'number' || input.type === 'range';
-  input.addEventListener('input', () => {
-    store.commit(patchFor(input.dataset.path, isNumber ? Number(input.value) : input.value));
-  });
+  input.addEventListener('input', () => store.commit(patchFor(input.dataset.path, isNumber ? Number(input.value) : input.value)));
 }
-
 for (const toggle of document.querySelectorAll('[data-toggle]')) {
-  toggle.addEventListener('click', () => {
-    store.commit(patchFor(toggle.dataset.toggle, !readPath(store.state, toggle.dataset.toggle)));
-  });
+  toggle.addEventListener('click', () => store.commit(patchFor(toggle.dataset.toggle, !readPath(store.state, toggle.dataset.toggle))));
 }
-
-/* ---------- session ---------- */
-
 $('#go-live').addEventListener('click', () => store.commit({ stream: { startedAt: Date.now() } }));
 $('#end-stream').addEventListener('click', () => store.commit({ stream: { startedAt: null } }));
 $('#countdown').addEventListener('input', (event) => {
   const minutes = event.target.value.trim();
   store.commit({ stream: { countdownSeconds: minutes === '' ? null : Math.round(Number(minutes) * 60) } });
 });
-
-/* ---------- goals ---------- */
 
 $('#goals').innerHTML = GOAL_KEYS.map(({ key, label }) => `
   <div class="ctl-field">
@@ -193,13 +534,10 @@ $('#goals').innerHTML = GOAL_KEYS.map(({ key, label }) => `
     <div class="ctl-meter"><div class="ctl-meter__fill" data-goal-fill="${key}"></div></div>
     <div class="ctl-meter__label"><span data-goal-readout="${key}"></span><span data-goal-pct="${key}"></span></div>
   </div>`).join('');
-
 for (const input of document.querySelectorAll('[data-goal]')) {
   const [key, field] = input.dataset.goal.split('.');
-  input.addEventListener('input', () => store.commit({ goals: { [key]: { [field]: Number(input.value) } } }));
+  input.addEventListener('input', () => store.commit({ goals: { items: { [key]: { [field]: Number(input.value) } } } }));
 }
-
-/* ---------- alerts ---------- */
 
 const TILE_FOR = { follower: 'follower', sub: 'sub', tip: 'tip' };
 for (const button of document.querySelectorAll('[data-alert]')) {
@@ -210,31 +548,11 @@ for (const button of document.querySelectorAll('[data-alert]')) {
     const message = $('#alert-message').value.trim();
     store.fireAlert({ kind, name, amount: amount || undefined, message: message || undefined });
     const tile = TILE_FOR[kind];
-    if (tile) store.commit({ activity: { [tile]: { value: kind === 'tip' && amount ? `${name} · ${amount}` : name } } });
+    if (tile) store.commit({ activity: { tiles: { [tile]: { value: kind === 'tip' && amount ? `${name} · ${amount}` : name } } } });
   });
 }
-
-/* ---------- theme ---------- */
-
-for (const input of document.querySelectorAll('[data-theme]')) {
-  const key = input.dataset.theme;
-  input.addEventListener('input', () => {
-    const value = input.type === 'range' ? Number(input.value) : input.value;
-    store.commit({ theme: { [key]: value } });
-  });
-}
-
-$('#motion-seg').addEventListener('click', (event) => {
-  const level = event.target.closest('[data-motion]')?.dataset.motion;
-  if (level) store.commit({ theme: { motion: level } });
-});
-
-$('#theme-reset').addEventListener('click', async () => {
-  await fetch('/api/theme/reset', { method: 'POST' }).catch(() => {});
-});
 
 /* ---------- branding ---------- */
-
 $('#branding').innerHTML = BRANDING_SLOTS.map(([slot, name, hint]) => `
   <div class="dash-drop" data-slot="${slot}">
     <div class="dash-drop__thumb" data-thumb="${slot}">NONE</div>
@@ -255,21 +573,14 @@ picker.addEventListener('change', () => { if (picker.files[0] && pickingSlot) up
 async function upload(slot, file) {
   const meta = document.querySelector(`[data-meta="${slot}"]`);
   const say = (text, error = false) => { meta.textContent = text; meta.classList.toggle('is-error', error); };
-
   if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { say(`${file.type || 'that file'} is not a PNG, JPEG or WebP`, true); return; }
   if (file.size > 8 * 1024 * 1024) { say(`${(file.size / 1048576).toFixed(1)} MB is over the 8 MB limit`, true); return; }
-
   say('Uploading…');
   try {
-    const res = await fetch(`/api/branding/${slot}`, {
-      method: 'POST', headers: { 'content-type': file.type }, body: file,
-    });
+    const res = await fetch(`/api/branding/${slot}`, { method: 'POST', headers: { 'content-type': file.type }, body: file });
     const body = await res.json();
-    if (!res.ok) { say(body.error ?? `Upload failed (${res.status})`, true); return; }
-    /* The server broadcasts the new state; render() paints the thumbnail. */
-  } catch (err) {
-    say(`Upload failed: ${err.message}`, true);
-  }
+    if (!res.ok) say(body.error ?? `Upload failed (${res.status})`, true);
+  } catch (err) { say(`Upload failed: ${err.message}`, true); }
 }
 
 $('#branding').addEventListener('click', (event) => {
@@ -291,7 +602,6 @@ for (const zone of document.querySelectorAll('.dash-drop')) {
 }
 
 /* ---------- scene editor ---------- */
-
 function renderSceneFields() {
   const fields = SCENE_FIELDS[activeScene.id] ?? [];
   $('#scene-editor-title').textContent = `${activeScene.label} — TEXT`;
@@ -303,23 +613,13 @@ function renderSceneFields() {
           <div class="ctl-toggle__hint">${hint}</div>
         </div>`).join('')
     : '<p class="dash-panel__intro" style="margin:0">This scene has no editable text — everything on it is either design-fixed or driven by Live Control.</p>';
-
   for (const input of $('#scene-fields').querySelectorAll('[data-scene-field]')) {
     input.value = readPath(store.state, input.dataset.sceneField) ?? '';
     input.addEventListener('input', () => store.commit(patchFor(input.dataset.sceneField, input.value)));
   }
 }
 
-/* ---------- widgets & data ---------- */
-
-$('#providers').innerHTML = PROVIDERS.map(([name, hint, live]) => `
-  <div class="dash-status" style="border-left-color:${live ? 'var(--cyan)' : 'rgba(255,255,255,.2)'}">
-    <div><div class="dash-status__name">${name}</div><div class="dash-status__hint">${hint}</div></div>
-    <span class="dash-tag dash-tag--${live ? 'live' : 'planned'}">${live ? 'ACTIVE' : 'PLANNED'}</span>
-  </div>`).join('');
-
 /* ---------- OBS setup ---------- */
-
 function urlRow(label, path, size) {
   const url = new URL(path, window.location.href).href;
   return `<div class="dash-url">
@@ -338,17 +638,24 @@ $('#obs-cameras').innerHTML = CAMERAS.map(([label, size, pos]) => `
     <div class="dash-url__size">${size} @ ${pos}</div>
   </div>`).join('');
 
+function copy(text, button) {
+  const done = () => { const old = button.textContent; button.textContent = 'COPIED'; setTimeout(() => { button.textContent = old; }, 1200); };
+  navigator.clipboard?.writeText(text).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } finally { ta.remove(); }
+  });
+}
 document.addEventListener('click', (event) => {
   const button = event.target.closest('[data-copy]');
   if (button) copy(button.dataset.copy, button);
 });
 
 /* ---------- render ---------- */
-
 store.subscribe((state) => {
-  /* The dashboard wears the theme it is editing, so a change is visible
-     immediately rather than only in the preview. */
-  const theme = applyTheme(state.theme);
+  /* The dashboard wears the theme it is editing. */
+  applyTheme(state.theme);
+  renderPages(state);
 
   for (const input of document.querySelectorAll('[data-path]')) {
     if (document.activeElement === input) continue;
@@ -359,22 +666,8 @@ store.subscribe((state) => {
     toggle.classList.toggle('is-on', Boolean(readPath(state, toggle.dataset.toggle)));
   }
 
-  /* theme controls */
-  for (const input of document.querySelectorAll('[data-theme]')) {
-    if (document.activeElement === input) continue;
-    input.value = theme[input.dataset.theme];
-  }
-  $('#accent-hex').textContent = theme.accent;
-  $('#accentAlt-hex').textContent = theme.accentAlt;
-  $('#glow-readout').textContent = theme.glow.toFixed(2);
-  $('#background-readout').textContent = theme.background.toFixed(2);
-  for (const b of $('#motion-seg').querySelectorAll('[data-motion]')) {
-    b.classList.toggle('is-active', b.dataset.motion === theme.motion);
-  }
-
-  /* goals */
   for (const { key } of GOAL_KEYS) {
-    const goal = state.goals[key];
+    const goal = state.goals.items[key];
     const pct = goalPercent(goal);
     for (const field of ['current', 'target']) {
       const input = document.querySelector(`[data-goal="${key}.${field}"]`);
@@ -385,7 +678,6 @@ store.subscribe((state) => {
     document.querySelector(`[data-goal-pct="${key}"]`).textContent = `${Math.round(pct)}%`;
   }
 
-  /* branding thumbnails */
   for (const [slot, , hint] of BRANDING_SLOTS) {
     const entry = state.branding?.[slot];
     const zone = document.querySelector(`[data-slot="${slot}"]`);
@@ -396,19 +688,15 @@ store.subscribe((state) => {
     thumb.style.backgroundImage = url ? `url("${url}")` : '';
     thumb.textContent = url ? '' : 'NONE';
     if (meta && !meta.classList.contains('is-error')) {
-      meta.textContent = entry?.file
-        ? `${entry.file} · ${(entry.bytes / 1024).toFixed(0)} KB`
-        : hint;
+      meta.textContent = entry?.file ? `${entry.file} · ${(entry.bytes / 1024).toFixed(0)} KB` : hint;
     }
   }
 
-  /* scene editor fields, when not being typed in */
   for (const input of document.querySelectorAll('[data-scene-field]')) {
     if (document.activeElement === input) continue;
     input.value = readPath(state, input.dataset.sceneField) ?? '';
   }
 
-  /* countdown + header */
   const countdown = $('#countdown');
   if (document.activeElement !== countdown) {
     countdown.value = Number.isFinite(state.stream.countdownSeconds) ? Math.round(state.stream.countdownSeconds / 60) : '';

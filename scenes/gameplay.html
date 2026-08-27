@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -24,28 +25,28 @@ import { brandBar, systemStrip, chatBox, webcamFrame, activityTiles, goalRail, s
 startScene(config, {
   alerts: true,
   render(state) {
-    const { modules, display } = state;
+    const { widgets, display } = state;
     return `
       ${/* The stand-in plate is opaque, so it gets the same camera cutout —
             otherwise it would hide the camera while you position sources. */''}
       ${display.showSampleGameplay ? sceneGround(samplePlate(), CAMERA_OPENINGS.gameplay) : ''}
 
-      ${modules.brandBar ? `
+      ${widgets.brandBar.enabled ? `
         <div style="position:absolute;left:32px;top:32px">${brandBar(state)}</div>` : ''}
 
-      ${modules.systemStrip ? `
+      ${widgets.systemStrip.enabled ? `
         <div style="position:absolute;right:32px;top:32px">${systemStrip(state)}</div>` : ''}
 
-      ${modules.chat ? `
+      ${state.chat.enabled ? `
         <div style="position:absolute;right:32px;top:120px">${chatBox(state, { width: 360, height: 680 })}</div>` : ''}
 
-      ${modules.webcam ? `
+      ${widgets.webcam.enabled ? `
         <div style="position:absolute;left:${CAMERA_OPENINGS.gameplay.x}px;top:${CAMERA_OPENINGS.gameplay.y}px">${webcamFrame(state)}</div>` : ''}
 
-      ${modules.activityTiles ? `
+      ${widgets.activity.enabled ? `
         <div style="position:absolute;left:472px;top:930px;display:flex;gap:16px">${activityTiles(state)}</div>` : ''}
 
-      ${modules.goalRail ? `
+      ${widgets.goalRail.enabled ? `
         <div style="position:absolute;left:32px;right:32px;bottom:26px">${goalRail(state)}</div>` : ''}
 
       ${display.showSafeArea ? safeArea() : ''}

@@ -1,0 +1,227 @@
+/* ============================================================
+   effects.css — the alert effect stack.
+
+   Every effect is CSS, with one inline SVG turbulence for noise.
+   No canvas, no WebGL, and no per-frame JavaScript: these run
+   inside OBS while a game renders and video encodes, so the work
+   belongs on the compositor rather than the main thread.
+
+   Each effect reads custom properties set by effects.js, so the
+   dashboard changes a number and nothing re-renders.
+
+   Cost notes (see EFFECTS in schema.js):
+     low     transform/opacity only — compositor work
+     medium  extra painted layers, still GPU-friendly
+     high    filters that force rasterisation; HIGH preset only
+   ============================================================ */
+
+.fx {
+  position: relative;
+  /* Effects paint inside the widget's own box and must never leak. */
+  isolation: isolate;
+}
+
+/* ---------- glow / bloom (low) ---------- */
+.fx--glow {
+  filter: drop-shadow(0 0 calc(var(--fx-glow-radius, 24px) * var(--fx-glow-intensity, 1))
+          rgba(var(--fx-rgb, 139, 77, 255), calc(.55 * var(--fx-glow-intensity, 1))));
+}
+
+/* ---------- edge trace (low) ---------- */
+.fx--edge-trace::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 30%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent,
+    rgba(var(--fx-rgb2, 34, 230, 224), var(--fx-trace-brightness, 1)), transparent);
+  animation: fx-trace calc(var(--fx-trace-speed, 3.4s) * var(--motion, 1)) linear infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+@keyframes fx-trace { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+
+/* ---------- flicker (low) ---------- */
+.fx--flicker {
+  animation: fx-flicker calc(var(--fx-flicker-period, 1s) * var(--motion, 1)) steps(2, end) infinite;
+}
+@keyframes fx-flicker {
+  0%, 92% { opacity: 1; }
+  93%     { opacity: calc(1 - var(--fx-flicker-intensity, .4)); }
+  94%     { opacity: 1; }
+  96%     { opacity: calc(1 - (var(--fx-flicker-intensity, .4) * .6)); }
+  100%    { opacity: 1; }
+}
+
+/* ---------- scanlines (low) ----------
+   A single repeating gradient. Movement is a background-position animation,
+   which the compositor handles without repainting the layer. */
+.fx--scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, var(--fx-scan-opacity, .12)) 0 1px,
+    transparent 1px var(--fx-scan-spacing, 4px));
+  pointer-events: none;
+  z-index: 4;
+}
+.fx--scanlines-move::after {
+  animation: fx-scan calc(var(--fx-scan-speed, 8s) * var(--motion, 1)) linear infinite;
+}
+@keyframes fx-scan { from { background-position-y: 0; } to { background-position-y: 100px; } }
+
+/* ---------- RGB / chromatic split (medium) ----------
+   Two offset copies of the text in red and cyan. Cheaper and sharper than an
+   SVG channel filter, and it degrades to nothing if unsupported. */
+.fx--rgb-split .fx-text {
+  text-shadow:
+    calc(var(--fx-rgb-x, 2px) * -1) calc(var(--fx-rgb-y, 0px) * -1) 0 rgba(255, 0, 60, var(--fx-rgb-intensity, .8)),
+    var(--fx-rgb-x, 2px) var(--fx-rgb-y, 0px) 0 rgba(0, 220, 255, var(--fx-rgb-intensity, .8));
+}
+
+/* ---------- ghosting (medium) ----------
+   One delayed copy that fades out. Uses the element's own content via a
+   duplicated node (effects.js adds it) so no filter is needed. */
+.fx-ghost {
+  position: absolute;
+  inset: 0;
+  opacity: var(--fx-ghost-opacity, .35);
+  transform: translate(var(--fx-ghost-offset, 6px), 0);
+  animation: fx-ghost-fade calc(var(--fx-ghost-decay, 420ms) * var(--motion, 1)) ease-out forwards;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes fx-ghost-fade { to { opacity: 0; transform: translate(0, 0); } }
+
+/* ---------- VHS slice / signal tear (medium) ----------
+   Horizontal bands that jump sideways. clip-path animation only touches the
+   compositor; the layer itself is never repainted. */
+.fx--vhs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  animation: fx-vhs calc(var(--fx-vhs-period, 3s) * var(--motion, 1)) steps(1, end) infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes fx-vhs {
+  0%, 88%  { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  90%      { clip-path: inset(22% 0 63% 0); transform: translateX(var(--fx-vhs-shift, 8px)); }
+  92%      { clip-path: inset(58% 0 31% 0); transform: translateX(calc(var(--fx-vhs-shift, 8px) * -1)); }
+  94%      { clip-path: inset(74% 0 12% 0); transform: translateX(calc(var(--fx-vhs-shift, 8px) * .5)); }
+  96%, 100%{ clip-path: inset(100% 0 0 0); transform: translateX(0); }
+}
+
+/* ---------- CRT (high) ----------
+   Curvature is faked with a rounded mask and an inner vignette rather than a
+   real warp: a genuine barrel distortion needs a displacement filter or WebGL,
+   and neither is worth the cost on a live overlay. Documented in the README. */
+.fx--crt {
+  border-radius: calc(var(--fx-crt-curve, .4) * 22px);
+  overflow: hidden;
+}
+.fx--crt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 100% at 50% 50%, transparent 55%,
+      rgba(0, 0, 0, calc(.55 * var(--fx-crt-intensity, .5))) 100%),
+    repeating-linear-gradient(0deg,
+      rgba(0, 0, 0, calc(.16 * var(--fx-crt-intensity, .5))) 0 1px, transparent 1px 3px);
+  animation: fx-crt-flicker calc(1.6s * var(--motion, 1)) steps(3, end) infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes fx-crt-flicker {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: calc(1 - (var(--fx-crt-flicker, .3) * .35)); }
+}
+
+/* ---------- noise / static (high) ----------
+   One inline SVG turbulence, generated once and reused as a tiled background.
+   Animating background-position moves it without regenerating the texture —
+   the expensive part of noise is making it, not showing it. */
+.fx--noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--fx-noise-intensity, .15);
+  background-image: var(--fx-noise-texture);
+  background-size: 180px 180px;
+  animation: fx-noise calc(var(--fx-noise-period, .5s) * var(--motion, 1)) steps(4, end) infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 6;
+}
+@keyframes fx-noise {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -60px 30px; }
+  50%  { background-position: 40px -50px; }
+  75%  { background-position: -30px -20px; }
+  100% { background-position: 0 0; }
+}
+
+/* ============================================================
+   Entrance / exit animations.
+   Durations come from --fx-anim-ms so timing stays deterministic:
+   the queue's own timers, not the animation, decide when an alert
+   ends.
+   ============================================================ */
+
+.fx-in--fade   { animation: fx-in-fade   var(--fx-anim-ms, 320ms) var(--ease) both; }
+.fx-in--slide  { animation: fx-in-slide  var(--fx-anim-ms, 320ms) var(--ease) both; }
+.fx-in--scale  { animation: fx-in-scale  var(--fx-anim-ms, 320ms) var(--ease) both; }
+.fx-in--pop    { animation: fx-in-pop    var(--fx-anim-ms, 320ms) cubic-bezier(.2, 1.5, .4, 1) both; }
+.fx-in--glitch { animation: fx-in-glitch var(--fx-anim-ms, 320ms) steps(4, end) both; }
+.fx-in--scan   { animation: fx-in-scan   var(--fx-anim-ms, 320ms) var(--ease) both; }
+
+@keyframes fx-in-fade  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fx-in-slide { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fx-in-scale { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: scale(1); } }
+@keyframes fx-in-pop   { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+@keyframes fx-in-glitch {
+  0%   { opacity: 0; transform: translate(-12px, 4px); clip-path: inset(40% 0 40% 0); }
+  33%  { opacity: 1; transform: translate(8px, -3px); clip-path: inset(10% 0 60% 0); }
+  66%  { opacity: 1; transform: translate(-4px, 2px); clip-path: inset(55% 0 8% 0); }
+  100% { opacity: 1; transform: translate(0, 0); clip-path: inset(0 0 0 0); }
+}
+@keyframes fx-in-scan {
+  from { opacity: 1; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+.fx-out--fade     { animation: fx-out-fade     var(--fx-anim-ms, 260ms) var(--ease) both; }
+.fx-out--slide    { animation: fx-out-slide    var(--fx-anim-ms, 260ms) var(--ease) both; }
+.fx-out--glitch   { animation: fx-out-glitch   var(--fx-anim-ms, 260ms) steps(4, end) both; }
+.fx-out--collapse { animation: fx-out-collapse var(--fx-anim-ms, 260ms) var(--ease) both; }
+
+@keyframes fx-out-fade     { to { opacity: 0; } }
+@keyframes fx-out-slide    { to { opacity: 0; transform: translateY(-12px); } }
+@keyframes fx-out-glitch {
+  0%   { opacity: 1; clip-path: inset(0 0 0 0); }
+  40%  { opacity: 1; transform: translateX(10px); clip-path: inset(30% 0 30% 0); }
+  70%  { opacity: .6; transform: translateX(-14px); clip-path: inset(70% 0 5% 0); }
+  100% { opacity: 0; transform: translateX(0); clip-path: inset(50% 0 50% 0); }
+}
+@keyframes fx-out-collapse { to { opacity: 0; transform: scaleY(.02); } }
+
+/* `none` must still be a real animation so the queue's animationend-free
+   timing stays uniform — it simply holds the final frame. */
+.fx-in--none, .fx-out--none { animation: none; }
+.fx-out--none { opacity: 0; }
+
+/* The global motion gate flattens every one of these. */
+:root[data-motion="0"] .fx,
+:root[data-motion="0"] [class*="fx-in--"],
+:root[data-motion="0"] [class*="fx-out--"] { animation: none !important; }
+:root[data-motion="0"] .fx--flicker { opacity: 1 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="1"]) .fx,
+  :root:not([data-motion="1"]) [class*="fx-in--"] { animation: none; }
+}

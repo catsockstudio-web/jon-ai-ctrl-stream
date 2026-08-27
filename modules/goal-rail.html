@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@ startModule(config, {
   width: 1856,
   height: 30,
   render(state) {
-    return state.modules.goalRail ? goalRail(state) : '';
+    return state.widgets.goalRail.enabled ? goalRail(state) : '';
   },
 });
 </script>

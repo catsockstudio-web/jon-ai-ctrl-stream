@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -28,7 +29,7 @@ const BOOT_LINE = '> grinder: running · stream: held';
 
 startScene(config, {
   render(state) {
-    const brew = Math.round(goalPercent(state.goals.coffee));
+    const brew = Math.round(goalPercent(state.goals.items.coffee));
     return `
       ${sceneGround(`
   <div class="ja-scene__bg" data-asset="brbBackground"></div>

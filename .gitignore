@@ -5,3 +5,4 @@ Thumbs.db
 state.json
 dist/
 state.acceptance.json
+state.customizer.json

@@ -109,87 +109,101 @@ can reach it.
 `control.html` still works — it redirects here, so an existing OBS dock or
 bookmark does not break.
 
-### The six sections
+### The ten pages
 
 Preview on the left, controls on the right. Pick a scene under the preview to
 see what you are changing.
 
-| Section | What it covers |
+| Page | What it covers |
 | --- | --- |
-| **Live Control** | Start / end the stream, today's topic, now playing, countdown, caffeine, the three goals, and test alerts |
-| **Theme** | Two accent colours, glow strength, background brightness, motion level, and a reset |
-| **Branding** | Drag an image onto a slot, or click to browse. The server stores the file and it survives restarts |
-| **Scene Editor** | Choose a scene, edit the text that scene actually uses |
-| **Widgets & Data** | Which modules are on screen, the setup aids, and where the numbers come from |
-| **OBS Setup** | Every browser-source URL with a copy button, the exact size for each, and camera placement |
+| **Live Control** | Start / end the stream, topic, now playing, countdown, caffeine, goal values, test alerts |
+| **Theme** | Six colours, six intensity sliders, motion level, effect performance, presets, resets |
+| **Branding** | Drag an image onto a slot. The server stores the file; it survives restarts |
+| **Scenes** | Choose a scene, edit the text that scene actually uses |
+| **Alerts** | Per type: text templates, duration, scale, position, colours, elements, animation, effect stack |
+| **Chat** | Ground, scale, position, typography, colours, elements, message animation |
+| **Goals** | Per goal: type, values, orientation, alignment, style, colours, elements |
+| **Widgets** | Placement and scale presets, activity list, setup aids |
+| **Integrations** | Where data comes from, performance modes, the danger zone |
+| **OBS Setup** | Every browser-source URL with a copy button, exact sizes, camera placement |
 
-**Theme is deliberately small.** It recolours and calms the package; it cannot
-move anything, resize anything, or reach the §09 measurements. Amber and
-magenta stay fixed because they carry meaning — money and bits — so recolouring
-them would make alerts harder to read. *Reset theme* returns everything to
-`config.js`.
+Every page follows the same shape: **basic controls visible, deeper ones behind
+an `ADVANCED` disclosure.** A beginner sees a short page; an advanced user opens
+one section and gets everything.
 
-Motion has three levels: **full** as designed, **reduced** keeps only the live
+### Two levels of customisation
+
+This is the rule the whole customiser is built on:
+
+```
+widget override  ->  global theme  ->  schema default
+```
+
+The **global theme** sets the package's identity. Every widget inherits from it.
+A **widget override** may replace selected theme values for one widget — so the
+package can be purple and cyan while donation alerts run amber. Each widget has
+a *Use global theme colours* toggle; switch it off and that widget's own colours
+win, with any blank slot still falling back to the theme rather than to nothing.
+Resetting an override returns the widget to inheriting, not to the shipped
+default.
+
+Amber and magenta are never recoloured by a theme: they mean money and bits, and
+recolouring them would make alerts harder to read at a glance.
+
+Motion has three levels — **full** as designed, **reduced** keeps only the live
 status dot and stills everything decorative, **off** freezes the package. Reduced
 is the useful middle setting when OBS is working hard.
 
-**Branding needs no folder editing.** Drop a PNG, JPEG or WebP (up to 8 MB) on a
-slot and the server writes it into `assets/`, records it in state, and pushes it
-to every open source. The file is validated by its actual bytes, not the name or
-the content-type header, so a renamed `.txt` is refused rather than written.
-*Clear* deletes it and the slot returns to its built-in placeholder — every slot
-works with no file at all.
+### Alerts
 
-**The Scene Editor edits text, not layout.** There is no on-canvas editing and
-nothing to drag. It lists only the fields a given scene genuinely uses; headlines
-like "THE MORNING GRIND IS STARTING SOON" are part of the design and are not
-offered as editable, rather than shown as a field that does nothing.
+Each type (follower, sub, tip, bits, and raid/gift-sub, which ship disabled) has
+its own text, timing, placement, colours, element toggles and effect stack.
 
-## 3. Add the browser sources
+Text is templated: `{name}`, `{amount}`, `{message}`, `{tier}`, `{count}`. An
+unknown token is **left visible** rather than silently dropped, so a typo shows
+up instead of eating half the line.
 
-In OBS: **Sources → + → Browser**, then set **URL** and the exact **Width** and
-**Height** below. Leave *Shutdown source when not visible* **off**, so a scene
-keeps its state when you cut away.
+Timing is owned by the queue, not by the animation: an alert lasts exactly its
+configured duration whatever entrance it uses, one shows at a time, and each
+fires exactly once.
 
-### Scenes — one source each, all 1920 × 1080
+### Effects
 
-| Scene              | URL                                                    | Size          | Transparent |
-| ------------------ | ------------------------------------------------------ | ------------- | ----------- |
-| 01 Gameplay        | `http://127.0.0.1:8787/scenes/gameplay.html`           | 1920 × 1080   | **Yes** — game capture goes behind it |
-| 02 Starting Soon   | `http://127.0.0.1:8787/scenes/starting-soon.html`      | 1920 × 1080   | No — full scene |
-| 03 Just Chatting   | `http://127.0.0.1:8787/scenes/just-chatting.html`      | 1920 × 1080   | No — camera goes behind the frame |
-| 04 BRB             | `http://127.0.0.1:8787/scenes/brb.html`                | 1920 × 1080   | No — full scene |
-| 05 Ending          | `http://127.0.0.1:8787/scenes/ending.html`             | 1920 × 1080   | No — full scene |
-| 06 Offline         | `http://127.0.0.1:8787/scenes/offline.html`            | 1920 × 1080   | No — also exports for the Twitch offline slot |
+Nine effects, all CSS with one inline SVG turbulence for noise. No canvas, no
+WebGL, and no per-frame JavaScript — these run while a game renders and video
+encodes, so the work belongs on the compositor.
 
-### Camera placement
-
-Both camera scenes render a genuine **transparent opening** where the camera
-belongs, so the camera source sits *below* the overlay in OBS and shows through
-it. You never need to put the camera on top.
-
-| Scene | Camera source size | Position |
+| Effect | Cost | Animated |
 | --- | --- | --- |
-| Gameplay | 400 × 225 | x32, **y775** |
-| Just Chatting | 1160 × 652 | x56, y300 |
+| Glow / Bloom | low | no |
+| Edge Trace | low | yes |
+| Flicker | low | yes |
+| Scanlines | low | no (movement optional) |
+| RGB / Chromatic split | medium | no |
+| Ghosting | medium | yes |
+| VHS Slice / Tear | medium | yes |
+| CRT Distortion | high | yes |
+| Noise / Static | high | yes |
 
-Set the camera source to **exactly** these numbers in OBS (Edit → Transform →
-Edit Transform, or drag with the size shown in Properties). This matters more
-than it looks — see the note below.
+**Performance presets** cap what may run: `LOW` allows only low-cost effects,
+`BALANCED` (default) adds medium, `HIGH` allows everything. An effect switched on
+but suppressed is reported in the UI with the reason — it is never silently
+ignored. **Motion Off** additionally drops every animated effect while leaving
+static ones (glow, RGB split) in place.
 
-**Layer order for Gameplay** (top to bottom): overlay browser source → camera →
-game capture.
+One honest limitation: **CRT curvature is faked.** A real barrel warp needs a
+displacement filter or WebGL; the effect uses a rounded mask and an inner
+vignette instead, which is convincing at overlay scale and costs almost nothing.
 
-**Layer order for Just Chatting** (top to bottom): scene browser source →
-camera.
+### Positions and scale
 
-The border, corner ticks, cyan scan and trace, and the nameplate all render
-*over* the camera. Everything else in the scene keeps its designed background.
-
-If you are positioning a camera that is not running yet, turn on **Camera
-placeholder** in the control page's Display panel to fill the opening with the
-striped `CAM_01` plate. It is off by default because it would otherwise paint
-over a live camera — which is exactly the bug it once caused.
+Placement is presets only, with authored safe margins — there is no freeform
+dragging, and each widget exposes only the positions that make sense for it.
+Scale is clamped per widget (alerts 70–150%, chat 75–125%, goals 60–150%) and
+transforms from the corner nearest the anchor, so scaling up cannot push a
+widget off the canvas. The webcam frame is deliberately **not** movable or
+scalable: its opening is a transparent cutout at an authored position, and
+moving it would leave the camera behind it out of register.
 
 ### Cropping the camera (Gameplay)
 
@@ -336,6 +350,85 @@ SSE rather than WebSockets: `EventSource` is native to every browser and the
 server side is a few lines of plain `http`, so the package stays
 dependency-free.
 
+## State schema
+
+One versioned document, owned by the server, persisted to `state.json`.
+
+```
+version       schema version — drives migration
+theme         colors{6} · intensity{6} · motionLevel · performance · preset
+alerts        follower · sub · tip · bits · raid · giftSub
+                each: enabled, title, template, secondary, duration, scale,
+                position, entrance, exit, animationMs, useThemeColors,
+                colors{}, accent, elements{}, effects{9}
+chat          enabled, mode, scale, position, maxMessages,
+                typography{}, colors{}, elements{}, animation{}, messages[]
+goals         items{follower,sub,coffee} · railGoal
+                each: type, label, current, target, mode, orientation,
+                alignment, scale, thickness, radius, useThemeColors,
+                colors{}, elements{}
+activity      enabled, mode, maxEvents, position, scale, elements{},
+                categories{}, tiles{}, events[]
+widgets       brandBar · systemStrip · webcam · goalRail · alerts · chat · activity
+                each: enabled, and position/scale where they apply
+channel       wordmark, showName, handle, node, camLabel, …
+stream        startedAt, topic, game, countdownSeconds
+caffeine      percent, cup, cups, autoDecay, decayPerHour
+branding      one entry per uploadable slot: {file, updatedAt, bytes} | null
+display       showSafeArea, showSampleGameplay, showCameraPlaceholder
+providers     active
+```
+
+`src/js/schema.js` is the single source of truth for defaults, limits, position
+sets, scale ranges, effect metadata and alert presets. `src/js/resolve.js` is
+the only place inheritance is decided.
+
+### Migration
+
+`state.json` carries a `version`. Anything without one is treated as v1 — the
+flat shape the package shipped with — and `migrate()` moves it explicitly:
+
+| v1 | v2 |
+| --- | --- |
+| `theme.accent` / `accentAlt` | `theme.colors.primary` / `.secondary` |
+| `theme.glow` / `background` / `motion` | `theme.intensity.*` / `theme.motionLevel` |
+| `modules.*` | `widgets.*.enabled` (and `chat.enabled`) |
+| `goals.<key>` | `goals.items.<key>` |
+| `display.chatGround` | `chat.mode` |
+| `activity` | `activity.tiles` |
+
+Values are carried across one field at a time rather than merged into a shape
+they predate, so an existing install keeps its settings. Uploaded artwork is
+untouched by migration and by every reset except the per-slot Clear.
+
+## Provider / style separation
+
+A provider supplies **event values**; it never supplies styling.
+
+```
+provider says:   follower = "Adem", amount = "$5.00"
+state says:      purple + cyan, RGB split 4px, 5s, bottom-centre, scale 1.2
+```
+
+That split is why a future `TwitchProvider` needs no knowledge of the theme, and
+why connecting one will not disturb any customisation already made. Adding one
+means writing a file in `src/js/providers/` and changing one line in
+`config.js`.
+
+## Resets
+
+| Scope | How |
+| --- | --- |
+| One control | the `↺` beside its label |
+| One widget / branch | `RESET` on the card, or `POST /api/reset/<branch>` |
+| Whole theme | `RESET` on the Theme cards |
+| Everything | Integrations → Danger Zone (asks first) |
+
+`POST /api/reset/<branch>` accepts any dotted path into the schema —
+`chat`, `theme.colors`, `alerts.tip` — and **replaces** that branch so removed
+keys do not survive. A full reset keeps `branding`: uploaded artwork is the
+user's own and is only removed by the explicit per-slot Clear.
+
 ## Adding live Twitch data later
 
 Scene and widget code reads only from the store; a **provider** is the one place
@@ -438,8 +531,18 @@ node test/acceptance.mjs   # transport — needs no server, starts its own
 node server.mjs &          # the rest run against a live server
 node test/render.mjs       # every page mounts, no script errors
 node test/alpha.mjs        # camera cutouts, masks, assets actually paint
-node test/dashboard.mjs    # the six sections, theming, uploads
+node test/dashboard.mjs    # the ten pages, theming, uploads
+node test/customizer.mjs   # customisation reaches live overlays (own server)
 ```
+
+`customizer.mjs` is the one that matters most: every check reads the **scene**,
+not the dashboard. A control that exists in the UI but does not change what OBS
+renders is worse than no control, so the suite asserts on computed styles,
+classes and geometry on the page a browser source would load — theme
+propagation, override precedence, override reset falling back to the theme,
+effect toggles and gating, alert timing and the queue, chat typography, goal
+orientation, sub-element toggles, position and scale, resets, v1 migration,
+restart persistence, and two isolated browsers staying in sync.
 
 `acceptance.mjs` drives the control page and the overlays in **two separate
 Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,

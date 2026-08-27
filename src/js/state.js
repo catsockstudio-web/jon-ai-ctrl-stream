@@ -1,3 +1,5 @@
+import { defaults } from './schema.js';
+
 /* ============================================================
    state.js — the shape of overlay state.
 
@@ -24,18 +26,7 @@ export function merge(base, patch) {
   return out;
 }
 
-/** Build the initial state from config defaults. */
+/** The initial document, straight from the schema. */
 export function initialState(config) {
-  return {
-    channel:  { ...config.channel },
-    stream:   { ...config.stream },
-    caffeine: { ...config.caffeine },
-    goals:    JSON.parse(JSON.stringify(config.goals)),
-    activity: JSON.parse(JSON.stringify(config.activity)),
-    modules:  { ...config.modules },
-    display:  { ...config.display },
-    theme:    { ...config.theme },
-    branding: { ...config.branding },
-    chat:     { messages: [...config.chat.demoMessages], maxMessages: config.chat.maxMessages },
-  };
+  return defaults(config);
 }

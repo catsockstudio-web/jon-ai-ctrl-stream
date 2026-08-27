@@ -431,3 +431,74 @@ body.dash {
 .dash-url__label { flex: none; width: 150px; font-size: 14px; }
 .dash-url__value { flex: 1; font-family: var(--font-mono); font-size: 12px; color: var(--cyan); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-url__size { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); }
+
+/* ---------- generated control surfaces ---------- */
+.ctl-reset {
+  float: right;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-2); font-size: 13px; line-height: 1;
+  padding: 0 2px; opacity: .5;
+}
+.ctl-reset:hover { opacity: 1; color: var(--cyan); }
+.dash-card__reset { float: right; padding: 3px 9px; font-size: 10px; }
+
+.dash-range { display: flex; align-items: center; gap: 12px; }
+.dash-range input[type="range"] { flex: 1; }
+.dash-range output {
+  flex: none; min-width: 48px; text-align: right;
+  font-family: var(--font-mono); font-size: 12px; color: var(--cyan);
+}
+.dash-hex {
+  flex: 1; font-family: var(--font-mono); font-size: 13px; text-transform: lowercase;
+}
+
+/* Position preset picker: a 3x3 of the canvas, so the control looks like
+   what it does. Unavailable spots for a given widget are visibly disabled. */
+.dash-pos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 132px;
+  aspect-ratio: 16 / 9;
+}
+.dash-pos button {
+  border: 1px solid rgba(139, 77, 255, .25);
+  background: rgba(10, 10, 15, .6);
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+.dash-pos button:hover:not(.is-unavailable) { border-color: var(--cyan); }
+.dash-pos button.is-active { background: rgba(34, 230, 224, .3); border-color: var(--cyan); }
+.dash-pos button.is-unavailable { opacity: .18; cursor: not-allowed; }
+
+/* ADVANCED disclosure — a beginner never sees these unless they ask. */
+.dash-adv { margin-top: 14px; border-top: 1px solid var(--hairline); padding-top: 12px; }
+.dash-adv summary {
+  cursor: pointer; list-style: none;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .22em; color: var(--text-2);
+}
+.dash-adv summary::-webkit-details-marker { display: none; }
+.dash-adv summary::before { content: '▸ '; color: var(--cyan); }
+.dash-adv[open] summary::before { content: '▾ '; }
+.dash-adv summary:hover { color: var(--cyan); }
+.dash-adv__body { padding-top: 14px; }
+
+.dash-warn {
+  display: inline-block;
+  margin-left: 12px; padding: 4px 10px;
+  background: rgba(240, 168, 85, .12);
+  border: 1px solid rgba(240, 168, 85, .4);
+  border-radius: 999px;
+  font-family: var(--font-ui); font-size: 12px; letter-spacing: 0; color: var(--amber);
+  text-transform: none;
+}
+
+/* Preview test tools — demo data must never be mistaken for live data. */
+.dash-preview__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dash-preview__tools .ctl-btn { padding: 7px 12px; font-size: 11px; }
+.dash-demo-tag {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em;
+  padding: 4px 9px; border-radius: 999px;
+  background: rgba(240, 168, 85, .14); color: var(--amber);
+}

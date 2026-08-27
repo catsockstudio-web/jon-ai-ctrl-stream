@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@ startModule(config, {
   width: 420,
   height: 44,
   render(state) {
-    return state.modules.systemStrip ? `<div style="display:flex;justify-content:flex-end">${systemStrip(state)}</div>` : '';
+    return state.widgets.systemStrip.enabled ? `<div style="display:flex;justify-content:flex-end">${systemStrip(state)}</div>` : '';
   },
 });
 </script>

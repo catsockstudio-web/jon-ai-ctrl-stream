@@ -5,6 +5,8 @@
 
 import { formatDuration, formatClock, caffeinePercent, uptimeMs } from './format.js';
 import { alertCard } from './components.js';
+import { applyEffects, entranceClass, exitClass } from './effects.js';
+import { placement, widgetColors } from './resolve.js';
 import { bindAssets } from './assets.js';
 import { motionEnabled } from './theme.js';
 
@@ -42,49 +44,74 @@ export function startTicker(root, store) {
    One alert on screen at a time; the rest wait their turn rather
    than stacking, so a raid never buries the game.
    ------------------------------------------------------------ */
-export function createAlertLayer(store, { base = '../', offsetTop = 120 } = {}) {
+export function createAlertLayer(store, { base = '../' } = {}) {
   const layer = document.createElement('div');
   layer.className = 'ja-alert-layer';
-  layer.style.cssText = `position:absolute;left:0;right:0;top:${offsetTop}px;display:flex;justify-content:center;pointer-events:none;z-index:80`;
+  layer.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:80';
 
   const queue = [];
   let showing = false;
+  let timers = [];
 
-  const duration = store.config.alerts?.durationMs ?? 5000;
-  const maxQueue = store.config.alerts?.maxQueue ?? 12;
-  /* Exit animation length from §07; kept in step with .is-leaving. */
-  const EXIT_MS = 260;
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
 
   function next() {
     if (showing || queue.length === 0) return;
-    if (!store.state.modules.alerts) { queue.length = 0; return; }
+    const state = store.state;
+    if (!state.widgets?.alerts?.enabled) { queue.length = 0; return; }
+
+    const data = queue.shift();
+    const cfg = state.alerts?.[data.kind] ?? state.alerts?.follower ?? {};
+    if (cfg.enabled === false) { next(); return; }
 
     showing = true;
-    const data = queue.shift();
-    layer.innerHTML = alertCard(data);
-    const card = layer.firstElementChild;
-    bindAssets(layer, store.config, base, store.state);
 
-    /* The alert always holds for its full life; motion only decides
-       whether it slides in and out or simply appears. */
-    setTimeout(() => {
-      card?.classList.remove('is-entering');
-      card?.classList.add('is-leaving');
-      setTimeout(() => {
-        layer.innerHTML = '';
+    /* Position and scale are presets, resolved the same way as any other
+       widget, so an alert cannot be placed off-canvas. */
+    const holder = document.createElement('div');
+    holder.style.cssText = placement(cfg, 'alerts');
+    holder.innerHTML = alertCard(data, state);
+    const card = holder.firstElementChild;
+
+    const animMs = motionEnabled(store.state) ? (cfg.animationMs ?? 320) : 0;
+    card.style.setProperty('--fx-anim-ms', `${animMs}ms`);
+    card.classList.add(entranceClass(cfg.entrance ?? 'slide'));
+
+    layer.appendChild(holder);
+    bindAssets(holder, store.config, base, state);
+
+    /* Effects are applied after the card is in the DOM so a ghost clone copies
+       the finished markup. activeEffects() has already dropped anything the
+       performance preset or motion level disallows. */
+    const colors = widgetColors(state, cfg);
+    applyEffects(card, state, cfg, colors);
+
+    /* Timing is owned here, not by animationend: an alert must last exactly
+       its configured duration whatever the entrance does, and must fire once. */
+    const duration = Math.max(500, cfg.duration ?? 5000);
+    timers.push(setTimeout(() => {
+      card.classList.remove(entranceClass(cfg.entrance ?? 'slide'));
+      card.classList.add(exitClass(cfg.exit ?? 'fade'));
+      timers.push(setTimeout(() => {
+        holder.remove();
         showing = false;
         next();
-      }, motionEnabled(store.state) ? EXIT_MS : 0);
-    }, duration);
+      }, animMs));
+    }, duration));
   }
 
   store.onAlert((alert) => {
-    if (!store.state.modules.alerts) return;
+    const state = store.state;
+    if (!state.widgets?.alerts?.enabled) return;
+    const maxQueue = store.config.alerts?.maxQueue ?? 12;
     if (queue.length >= maxQueue) return;
     queue.push(alert);
     next();
   });
 
+  /* Nothing accumulates: each card and its ghost are removed together, and
+     the timers that own them are cleared if the layer goes away. */
+  layer.addEventListener('ja:teardown', clearTimers);
   return layer;
 }
 

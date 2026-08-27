@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@ startModule(config, {
   width: 798,
   height: 70,
   render(state) {
-    return state.modules.activityTiles ? `<div style="display:flex;gap:16px">${activityTiles(state)}</div>` : '';
+    return state.widgets.activity.enabled ? `<div style="display:flex;gap:16px">${activityTiles(state)}</div>` : '';
   },
 });
 </script>

@@ -716,3 +716,94 @@
 }
 .ja-label--cyan { color: var(--cyan); }
 .ja-label--lg   { font-size: 16px; }
+
+/* ============================================================
+   Configurable widget surfaces.
+   These read custom properties written by the components, so the
+   dashboard changes state and nothing needs new markup.
+   ============================================================ */
+
+/* ---------- alerts ---------- */
+.ja-alert {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--alert-primary, var(--violet)) 26%, transparent),
+              rgba(14, 14, 20, .86) 55%);
+  border-color: color-mix(in srgb, var(--alert-primary, var(--violet)) 50%, transparent);
+  border-left-color: var(--alert-primary, var(--violet));
+  color: var(--alert-text, var(--text-1));
+}
+.ja-alert__kicker { color: var(--alert-primary, var(--purple)); }
+.ja-alert__name   { color: var(--alert-text, var(--text-1)); }
+/* Element toggles: the shell survives without its panel or border. */
+.ja-alert--bare { background: none; box-shadow: none; }
+.ja-alert--noborder { border: none; }
+
+/* ---------- chat ---------- */
+.ja-chat {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--chat-bg, #101018) calc(var(--chat-bg-opacity, .8) * 100%), transparent) 0%,
+    color-mix(in srgb, var(--chat-bg, #0A0A0F) calc(var(--chat-bg-opacity, .8) * 78%), transparent) 100%);
+  border-color: color-mix(in srgb, var(--chat-border, var(--violet)) 30%, transparent);
+}
+.ja-chat--square { border-radius: 2px; }
+.ja-chat .ja-panel-header__label { color: var(--chat-header, var(--cyan)); }
+.ja-chat__list { gap: var(--chat-gap, 14px); }
+.ja-chat__msg {
+  font-family: var(--chat-font, var(--font-ui));
+  font-size: var(--chat-size, 20px);
+  font-weight: var(--chat-weight, 400);
+  line-height: var(--chat-line, 1.3);
+  color: var(--chat-text, var(--text-1));
+}
+.ja-chat__time  { font-family: var(--font-mono); font-size: .6em; color: var(--text-2); margin-right: 6px; }
+.ja-chat__badge {
+  font-family: var(--font-mono); font-size: .55em; letter-spacing: .1em;
+  padding: 1px 5px; margin-right: 6px; border-radius: 3px;
+  background: color-mix(in srgb, var(--chat-header, var(--cyan)) 22%, transparent);
+  color: var(--chat-header, var(--cyan));
+}
+/* Message entrance styles. */
+.ja-chat__msg--fade  { animation: ja-chat-fade  calc(var(--chat-anim, 200ms) * var(--motion, 1)) var(--ease); }
+.ja-chat__msg--slide { animation: ja-chat-slide calc(var(--chat-anim, 200ms) * var(--motion, 1)) var(--ease); }
+.ja-chat__msg--rise  { animation: ja-chat-rise  calc(var(--chat-anim, 200ms) * var(--motion, 1)) var(--ease); }
+.ja-chat__msg--digital { animation: ja-chat-digital calc(var(--chat-anim, 200ms) * var(--motion, 1)) steps(4, end); }
+@keyframes ja-chat-fade  { from { opacity: 0; } }
+@keyframes ja-chat-slide { from { opacity: 0; transform: translateX(calc(var(--chat-dist, 8px) * -1)); } }
+@keyframes ja-chat-rise  { from { opacity: 0; transform: translateY(var(--chat-dist, 8px)); } }
+@keyframes ja-chat-digital { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* ---------- goals ---------- */
+.ja-goal__rail { height: var(--goal-thickness, 6px); border-radius: var(--goal-radius, 3px); }
+.ja-goal__fill {
+  background: linear-gradient(90deg, var(--goal-primary, var(--violet)), var(--goal-secondary, var(--cyan)));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--goal-secondary, var(--cyan)) 50%, transparent);
+}
+.ja-goal__label { color: var(--goal-text, var(--text-2)); }
+.ja-goal__value { color: var(--goal-secondary, var(--cyan)); }
+.ja-goal__segment.is-filled { background: var(--goal-primary, var(--purple)); }
+.ja-goal--noglow .ja-goal__fill,
+.ja-goal--noglow .ja-goal__mug-fill { box-shadow: none; }
+.ja-goal--static .ja-goal__fill,
+.ja-goal--static .ja-goal__mug-fill { animation: none; }
+.ja-goal--framed {
+  padding: 10px 12px;
+  border: var(--hairline-w) solid color-mix(in srgb, var(--goal-primary, var(--violet)) 40%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+/* Vertical goals: the rail becomes a column and fills upward. */
+.ja-goal--vertical { display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
+.ja-goal--vertical .ja-goal__head { flex-direction: column; align-items: center; gap: 4px; margin: 0; }
+.ja-goal--vertical .ja-goal__rail {
+  position: relative;
+  width: var(--goal-thickness, 6px);
+  height: 100%;
+  min-height: 160px;
+  flex: 1;
+}
+.ja-goal--vertical .ja-goal__fill {
+  top: auto; bottom: 0; left: 0; right: 0;
+  width: 100%;
+  background: linear-gradient(0deg, var(--goal-primary, var(--violet)), var(--goal-secondary, var(--cyan)));
+  transition: height 600ms var(--ease);
+}
+.ja-goal--vertical .ja-goal__segments { flex-direction: column-reverse; width: var(--goal-thickness, 12px); height: 100%; }

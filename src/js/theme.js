@@ -34,82 +34,106 @@ function scale(rgb, factor) {
 const rgba = (rgb, alpha) =>
   `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, ${Number(alpha.toFixed(3))})`;
 
-/* ---------- defaults, so a missing or malformed value never breaks ---------- */
+/* ---------- presets ----------
+   A preset is nothing special: it writes the same tokens an operator could
+   set by hand, so every value stays editable afterwards. */
 
-export const THEME_DEFAULTS = {
-  accent: '#8B4DFF',
-  accentAlt: '#22E6E0',
-  glow: 1,
-  background: 1,
-  motion: 'full',
+export const THEME_PRESETS = {
+  default:      { label: 'JON_AI_CTRL Default', colors: { primary: '#8B4DFF', secondary: '#22E6E0', highlight: '#F0A855', background: '#0A0A0F', text: '#EAEAF2', textDim: '#8E8FA6' } },
+  cyan:         { label: 'Cyan',          colors: { primary: '#1FA8C7', secondary: '#5BF0E0', highlight: '#F0A855', background: '#06121A', text: '#EAF6FA', textDim: '#7E97A6' } },
+  purple:       { label: 'Purple',        colors: { primary: '#A855F7', secondary: '#E879F9', highlight: '#FBBF24', background: '#0C0716', text: '#F2EAFA', textDim: '#9B8FA6' } },
+  green:        { label: 'Green',         colors: { primary: '#22C55E', secondary: '#A3E635', highlight: '#F0A855', background: '#07130C', text: '#EAFAEE', textDim: '#84A68F' } },
+  amber:        { label: 'Amber',         colors: { primary: '#F59E0B', secondary: '#FCD34D', highlight: '#FB7185', background: '#150E04', text: '#FAF3EA', textDim: '#A6957E' } },
+  highContrast: { label: 'High Contrast', colors: { primary: '#FFFFFF', secondary: '#00E5FF', highlight: '#FFD500', background: '#000000', text: '#FFFFFF', textDim: '#C9C9C9' } },
 };
 
-export const THEME_LIMITS = {
-  glow:       { min: 0, max: 2,   step: 0.05 },
-  background: { min: 0.6, max: 1.4, step: 0.02 },
-  motion:     ['off', 'reduced', 'full'],
+/* ---------- application ---------- */
+
+const FALLBACK_COLORS = THEME_PRESETS.default.colors;
+
+const LIMITS = {
+  glow:                 { min: 0,   max: 2 },
+  panelOpacity:         { min: 0.2, max: 1 },
+  backgroundBrightness: { min: 0.6, max: 1.4 },
+  borderBrightness:     { min: 0.2, max: 2 },
+  scanlines:            { min: 0,   max: 0.6 },
+  motion:               { min: 0,   max: 1.5 },
 };
 
-/** Coerce whatever is in state into something safe to apply. */
+/** Coerce whatever is in state into something safe to paint. */
 export function normalizeTheme(theme) {
-  const t = { ...THEME_DEFAULTS, ...(theme ?? {}) };
+  const t = theme ?? {};
+  const colors = Object.fromEntries(Object.entries(FALLBACK_COLORS)
+    .map(([k, fb]) => [k, parseHex(t.colors?.[k]) ? t.colors[k] : fb]));
+  const intensity = Object.fromEntries(Object.entries(LIMITS)
+    .map(([k, lim]) => [k, clamp(Number(t.intensity?.[k] ?? 1), lim.min, lim.max)]));
   return {
-    accent:     parseHex(t.accent) ? t.accent : THEME_DEFAULTS.accent,
-    accentAlt:  parseHex(t.accentAlt) ? t.accentAlt : THEME_DEFAULTS.accentAlt,
-    glow:       clamp(Number(t.glow) || 0, THEME_LIMITS.glow.min, THEME_LIMITS.glow.max),
-    background: clamp(Number(t.background) || 1, THEME_LIMITS.background.min, THEME_LIMITS.background.max),
-    motion:     THEME_LIMITS.motion.includes(t.motion) ? t.motion : THEME_DEFAULTS.motion,
+    colors,
+    intensity,
+    motionLevel: ['off', 'reduced', 'full'].includes(t.motionLevel) ? t.motionLevel : 'full',
+    performance: ['low', 'balanced', 'high'].includes(t.performance) ? t.performance : 'balanced',
+    preset: t.preset ?? 'default',
   };
 }
 
-/** True when anything should animate at all. */
 export function motionEnabled(state) {
-  return normalizeTheme(state?.theme).motion !== 'off';
+  return normalizeTheme(state?.theme).motionLevel !== 'off';
 }
 
 /**
- * Apply a theme to a document.
- * Writes only custom properties and two data attributes — never layout.
+ * Apply a theme to a document: custom properties and two data attributes.
+ * Never layout, never a measurement — the worst a bad value can do is look
+ * wrong, and every value has already been clamped above.
  */
 export function applyTheme(theme, root = document.documentElement) {
   const t = normalizeTheme(theme);
+  const c = t.colors;
+  const i = t.intensity;
 
-  const accent = parseHex(t.accent);
-  const alt = parseHex(t.accentAlt);
+  const primary = parseHex(c.primary);
+  const secondary = parseHex(c.secondary);
+  const highlight = parseHex(c.highlight);
+  const bg = parseHex(c.background);
 
-  /* Violet/purple follow the primary accent, cyan/blue the secondary. The
-     lighter partners keep the design's two-tone gradients intact. */
-  root.style.setProperty('--violet', toHex(accent));
-  root.style.setProperty('--purple', toHex(lighten(accent, 0.18)));
-  root.style.setProperty('--cyan', toHex(alt));
-  root.style.setProperty('--blue', toHex(lighten(alt, 0.30)));
+  /* Violet/purple follow the primary, cyan/blue the secondary, amber the
+     highlight. Magenta stays fixed — it means bits. */
+  root.style.setProperty('--violet', toHex(primary));
+  root.style.setProperty('--purple', toHex(lighten(primary, 0.18)));
+  root.style.setProperty('--cyan', toHex(secondary));
+  root.style.setProperty('--blue', toHex(lighten(secondary, 0.30)));
+  root.style.setProperty('--amber', toHex(highlight));
+  root.style.setProperty('--text-1', c.text);
+  root.style.setProperty('--text-2', c.textDim);
 
-  /* Hairlines and panel edges are the accent at low alpha. */
-  root.style.setProperty('--hairline', rgba(accent, 0.30));
+  /* Background brightness scales the canvas only; panels keep their own
+     translucency so text contrast never collapses. */
+  root.style.setProperty('--bg', toHex(scale(bg, i.backgroundBrightness)));
+  root.style.setProperty('--panel-bg', rgba(scale(bg, 1.35), i.panelOpacity));
+  root.style.setProperty('--hairline', rgba(primary, clamp(0.30 * i.borderBrightness, 0.05, 1)));
+  root.style.setProperty('--hairline-soft', rgba({ r: 255, g: 255, b: 255 }, clamp(0.08 * i.borderBrightness, 0.02, 0.4)));
 
-  /* Glows scale with the slider and take their hue from the accents, so a
-     recoloured package glows in its own colour rather than the original. */
-  const g = t.glow;
-  root.style.setProperty('--glow-violet', `0 0 ${28 * g}px ${rgba(accent, 0.18 * g)}`);
-  root.style.setProperty('--glow-cyan',   `0 0 ${24 * g}px ${rgba(alt, 0.22 * g)}`);
-  root.style.setProperty('--glow-alert',  `0 0 ${44 * g}px ${rgba(accent, 0.30 * g)}`);
+  const g = i.glow;
+  root.style.setProperty('--glow-violet', `0 0 ${28 * g}px ${rgba(primary, 0.18 * g)}`);
+  root.style.setProperty('--glow-cyan',   `0 0 ${24 * g}px ${rgba(secondary, 0.22 * g)}`);
+  root.style.setProperty('--glow-alert',  `0 0 ${44 * g}px ${rgba(primary, 0.30 * g)}`);
   root.style.setProperty('--glow-scale', String(g));
 
-  /* Background brightness scales the canvas colour only. Panels keep their
-     own translucency so contrast with text never collapses. */
-  const bg = scale({ r: 10, g: 10, b: 15 }, t.background);
-  root.style.setProperty('--bg', toHex(bg));
+  /* A package-wide scanline wash, separate from the per-alert effect. */
+  root.style.setProperty('--scanline-opacity', String(i.scanlines));
 
-  root.dataset.motion = t.motion === 'off' ? '0' : '1';
-  root.dataset.motionLevel = t.motion;
+  root.dataset.motion = t.motionLevel === 'off' ? '0' : '1';
+  root.dataset.motionLevel = t.motionLevel;
+  root.dataset.performance = t.performance;
   return t;
 }
 
 /** Reset a document back to the stylesheet's own values. */
 export function clearTheme(root = document.documentElement) {
-  for (const prop of ['--violet', '--purple', '--cyan', '--blue', '--hairline',
-    '--glow-violet', '--glow-cyan', '--glow-alert', '--glow-scale', '--bg']) {
+  for (const prop of ['--violet', '--purple', '--cyan', '--blue', '--amber', '--text-1', '--text-2',
+    '--bg', '--panel-bg', '--hairline', '--hairline-soft',
+    '--glow-violet', '--glow-cyan', '--glow-alert', '--glow-scale', '--scanline-opacity']) {
     root.style.removeProperty(prop);
   }
   delete root.dataset.motionLevel;
+  delete root.dataset.performance;
 }

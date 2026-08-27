@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/components.css">
+<link rel="stylesheet" href="../src/css/effects.css">
 <script src="../boot-check.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@ startModule(config, {
   width: 360,
   height: 680,
   render(state) {
-    return state.modules.chat ? chatBox(state, { width: 360, height: 680 }) : '';
+    return state.chat.enabled ? chatBox(state, { width: 360, height: 680 }) : '';
   },
 });
 </script>

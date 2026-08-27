@@ -112,13 +112,13 @@ await sleep(800);
 check('topic typed in A reaches a scene in B', (await chatting.content()).includes('Cross-browser transport'));
 
 check('chat panel visible before toggle', await scene.locator('.ja-chat').count() === 1);
-/* Module toggles live under Widgets & Data; open that section first. */
-await control.click('[data-nav="widgets"]');
-await sleep(200);
-await control.click('[data-toggle="modules.chat"]');
+/* Chat's own enable lives on the Chat page; open it first. */
+await control.click('[data-nav="chat"]');
+await sleep(250);
+await control.click('[data-ctl-toggle="chat.enabled"]');
 await sleep(600);
 check('module toggle in A hides the panel in B', await scene.locator('.ja-chat').count() === 0);
-await control.click('[data-toggle="modules.chat"]');
+await control.click('[data-ctl-toggle="chat.enabled"]');
 await sleep(400);
 /* Goals are back on Live Control. */
 await control.click('[data-nav="live"]');
