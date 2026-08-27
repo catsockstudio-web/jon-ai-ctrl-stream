@@ -60,12 +60,26 @@ export async function applyAssetSlot(el, url) {
  *
  * Resolution happens in parallel and never blocks first paint.
  */
-export function bindAssets(root, config, base = '') {
+export function bindAssets(root, config, base = '', state = null) {
   const slots = root.querySelectorAll('[data-asset]');
   return Promise.all([...slots].map((el) => {
-    const url = config.assets?.[el.dataset.asset];
-    return url ? applyAssetSlot(el, resolve(url, base)) : false;
+    const url = assetUrl(el.dataset.asset, config, base, state);
+    return url ? applyAssetSlot(el, url) : false;
   }));
+}
+
+/**
+ * Where a slot's image lives, if anywhere.
+ *
+ * An upload made through the dashboard wins over the path in config.js: the
+ * server owns those files, and `updatedAt` rides along as a cache-buster so a
+ * replaced logo appears immediately instead of after a cache clear.
+ */
+export function assetUrl(slot, config, base = '', state = null) {
+  const uploaded = state?.branding?.[slot];
+  if (uploaded?.file) return `${base}assets/${uploaded.file}?v=${uploaded.updatedAt ?? 0}`;
+  const configured = config.assets?.[slot];
+  return configured ? resolve(configured, base) : null;
 }
 
 /** Resolve a package-root-relative asset path from a page `base`. */

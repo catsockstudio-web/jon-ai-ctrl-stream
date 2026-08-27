@@ -34,6 +34,8 @@ export function initialState(config) {
     activity: JSON.parse(JSON.stringify(config.activity)),
     modules:  { ...config.modules },
     display:  { ...config.display },
+    theme:    { ...config.theme },
+    branding: { ...config.branding },
     chat:     { messages: [...config.chat.demoMessages], maxMessages: config.chat.maxMessages },
   };
 }

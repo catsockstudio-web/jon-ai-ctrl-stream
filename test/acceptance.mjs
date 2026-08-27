@@ -25,6 +25,7 @@ import { rm } from 'node:fs/promises';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 8788;
 const BASE = `http://127.0.0.1:${PORT}`;
+const STATE_FILE = join(ROOT, 'state.acceptance.json');
 
 /* Resolve Playwright from a local install, then a global one. */
 let chromium;
@@ -46,7 +47,10 @@ const check = (name, pass, detail = '') => {
 
 let server;
 function startServer() {
-  server = spawn(process.execPath, [join(ROOT, 'server.mjs'), String(PORT)], { cwd: ROOT, stdio: 'ignore' });
+  /* Its own state file: a live server on another port must not be able to
+     write settings underneath this run. */
+  server = spawn(process.execPath, [join(ROOT, 'server.mjs'), String(PORT), '--state', STATE_FILE],
+    { cwd: ROOT, stdio: 'ignore' });
 }
 async function stopServer() {
   if (!server) return;
@@ -66,7 +70,7 @@ async function waitForServer(timeoutMs = 8000) {
   throw new Error('server did not come up');
 }
 
-await rm(join(ROOT, 'state.json'), { force: true });
+await rm(STATE_FILE, { force: true });
 startServer();
 await waitForServer();
 
@@ -80,7 +84,7 @@ const obsCtx     = await obsBrowser.newContext({ viewport: { width: 1920, height
 for (const ctx of [controlCtx, obsCtx]) await ctx.route('**://fonts.g*/**', (r) => r.abort());
 
 const control = await controlCtx.newPage();
-await control.goto(`${BASE}/control.html`, { waitUntil: 'domcontentloaded' });
+await control.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
 
 const scene = await obsCtx.newPage();
 await scene.goto(`${BASE}/scenes/gameplay.html`, { waitUntil: 'domcontentloaded' });
@@ -108,11 +112,17 @@ await sleep(800);
 check('topic typed in A reaches a scene in B', (await chatting.content()).includes('Cross-browser transport'));
 
 check('chat panel visible before toggle', await scene.locator('.ja-chat').count() === 1);
+/* Module toggles live under Widgets & Data; open that section first. */
+await control.click('[data-nav="widgets"]');
+await sleep(200);
 await control.click('[data-toggle="modules.chat"]');
 await sleep(600);
 check('module toggle in A hides the panel in B', await scene.locator('.ja-chat').count() === 0);
 await control.click('[data-toggle="modules.chat"]');
 await sleep(400);
+/* Goals are back on Live Control. */
+await control.click('[data-nav="live"]');
+await sleep(200);
 
 await control.fill('[data-goal="follower.current"]', '250');
 await sleep(700);
@@ -174,7 +184,7 @@ check('control still drives scenes after a restart (SSE reconnected)',
 await controlBrowser.close();
 await obsBrowser.close();
 await stopServer();
-await rm(join(ROOT, 'state.json'), { force: true });
+await rm(STATE_FILE, { force: true });
 
 const failed = results.filter(([, ok]) => !ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed.`);

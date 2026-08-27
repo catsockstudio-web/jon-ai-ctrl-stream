@@ -45,6 +45,21 @@ body:not(.control) {
   transform: scale(var(--stage-scale));
 }
 
+/* 'reduced' keeps the one signal that carries meaning — the live status dot —
+   and stills everything decorative. Between "everything moving" and "a frozen
+   image", this is what most operators actually want on a busy scene. */
+:root[data-motion-level="reduced"] .ja-scene__glow,
+:root[data-motion-level="reduced"] .ja-webcam__scan,
+:root[data-motion-level="reduced"] .ja-webcam__trace,
+:root[data-motion-level="reduced"] .ja-panel-header__trace,
+:root[data-motion-level="reduced"] .ja-steam__bar,
+:root[data-motion-level="reduced"] .ja-goal__fill,
+:root[data-motion-level="reduced"] .ja-goal__mug-fill,
+:root[data-motion-level="reduced"] .ja-mascot__eye,
+:root[data-motion-level="reduced"] .ja-avatar__eye {
+  animation: none;
+}
+
 /* ---------- §08 motion language ----------
    All durations are multiplied by --motion so the master gate can flatten
    the package. A 0s duration parks the animation on its first keyframe. */

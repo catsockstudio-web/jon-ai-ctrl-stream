@@ -17,6 +17,7 @@ import { boot } from './providers/index.js';
 import { mountStage } from './stage.js';
 import { bindAssets } from './assets.js';
 import { startTicker, createAlertLayer } from './widgets.js';
+import { applyTheme } from './theme.js';
 
 /**
  * @param {object} config
@@ -61,14 +62,15 @@ export async function startScene(config, options) {
 
   let lastHtml = null;
   store.subscribe((state) => {
-    /* Master motion gate — one attribute flattens the whole package. */
-    document.documentElement.dataset.motion = state.display.motion ? '1' : '0';
+    /* Accents, glow, background brightness and the motion level, all from
+       server state — so a theme change reaches every open source at once. */
+    applyTheme(state.theme);
 
     const html = render(state);
     if (html !== lastHtml) {
       lastHtml = html;
       content.innerHTML = html;
-      bindAssets(content, config, base);
+      bindAssets(content, config, base, state);
     }
     onRender?.(state, content, store);
   });

@@ -24,22 +24,53 @@
    ============================================================ */
 
 import { createServer } from 'node:http';
-import { readFile, writeFile, stat } from 'node:fs/promises';
+import { readFile, writeFile, stat, mkdir, readdir, unlink } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
-const STATE_FILE = join(ROOT, 'state.json');
+/* Where settings persist. Overridable with --state so a second instance —
+   the acceptance suite, or a test profile — cannot fight the live server over
+   the same file. */
+const STATE_FILE = (() => {
+  const i = process.argv.indexOf('--state');
+  return i !== -1 && process.argv[i + 1] ? resolve(process.argv[i + 1]) : join(ROOT, 'state.json');
+})();
 
 const args = process.argv.slice(2);
-const PORT = Number(args.find((a) => /^\d+$/.test(a))) || 8787;
+const stateFlag = args.indexOf('--state');
+/* Skip the value that follows --state when hunting for the port. */
+const PORT = Number(args.find((a, i) => /^\d+$/.test(a) && i !== stateFlag + 1)) || 8787;
 const hostFlag = args.indexOf('--host');
 /* Localhost-only by default. Pass --host 0.0.0.0 deliberately to run the
    control page from another machine on your LAN. */
 const HOST = hostFlag !== -1 ? (args[hostFlag + 1] ?? '127.0.0.1') : '127.0.0.1';
 
 const MAX_BODY = 256 * 1024;
+/* Uploads get their own, larger cap — a 1920x1080 background is legitimately
+   a few MB, while a state patch never is. */
+const MAX_UPLOAD = 8 * 1024 * 1024;
+const ASSETS_DIR = join(ROOT, 'assets');
+
+/* Only these slots exist, and only these types. Anything else is refused
+   before a byte is written. */
+const BRANDING_SLOTS = new Set([
+  'logo', 'avatar', 'mascot', 'brbArt',
+  'startingBackground', 'brbBackground', 'endingBackground',
+]);
+
+const IMAGE_TYPES = [
+  { ext: 'png',  mime: 'image/png',  magic: [0x89, 0x50, 0x4e, 0x47] },
+  { ext: 'jpg',  mime: 'image/jpeg', magic: [0xff, 0xd8, 0xff] },
+  { ext: 'webp', mime: 'image/webp', magic: [0x52, 0x49, 0x46, 0x46] },
+];
+
+/* Trust the bytes, not the header: a content-type is whatever the caller
+   claims, while the magic number is what the file actually is. */
+function sniffImage(buffer) {
+  return IMAGE_TYPES.find((t) => t.magic.every((byte, i) => buffer[i] === byte)) ?? null;
+}
 
 /* ---------- state ---------- */
 
@@ -52,6 +83,8 @@ function initialState() {
     activity: structuredClone(config.activity),
     modules:  { ...config.modules },
     display:  { ...config.display },
+    theme:    { ...config.theme },
+    branding: { ...config.branding },
     chat:     { messages: [...config.chat.demoMessages], maxMessages: config.chat.maxMessages },
   };
 }
@@ -145,6 +178,32 @@ function readBody(req) {
   });
 }
 
+/* Uploads arrive as a raw body rather than multipart: one file per request,
+   no parser, no dependency. */
+function readRawBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > limit) { reject(new Error('file too large')); req.destroy(); return; }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+/* One slot owns one file; changing format must not leave the old one behind
+   for the asset probe to find. */
+async function removeSlotFiles(slot) {
+  let entries = [];
+  try { entries = await readdir(ASSETS_DIR); } catch { return; }
+  await Promise.all(entries
+    .filter((name) => IMAGE_TYPES.some((t) => name === `${slot}.${t.ext}`))
+    .map((name) => unlink(join(ASSETS_DIR, name)).catch(() => {})));
+}
+
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -222,6 +281,62 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  /* ---- branding uploads ---- */
+  if (path.startsWith('/api/branding/') && req.method === 'POST') {
+    const [, , , slot, action] = path.split('/');
+
+    if (!BRANDING_SLOTS.has(slot)) {
+      json(res, 400, { error: `unknown slot "${slot}"` });
+      return;
+    }
+
+    /* POST /api/branding/<slot>/clear — back to the CSS fallback. */
+    if (action === 'clear') {
+      await removeSlotFiles(slot);
+      state = merge(state, { branding: { [slot]: null } });
+      persist();
+      broadcast('patch', { branding: { [slot]: null } });
+      json(res, 200, { ok: true, slot, file: null });
+      return;
+    }
+
+    try {
+      const body = await readRawBody(req, MAX_UPLOAD);
+      if (body.length === 0) { json(res, 400, { error: 'empty upload' }); return; }
+
+      const type = sniffImage(body);
+      if (!type) {
+        json(res, 415, { error: 'not a PNG, JPEG or WebP image' });
+        return;
+      }
+
+      await mkdir(ASSETS_DIR, { recursive: true });
+      await removeSlotFiles(slot);
+      const file = `${slot}.${type.ext}`;
+      await writeFile(join(ASSETS_DIR, file), body);
+
+      /* updatedAt doubles as a cache-buster in the URL the client builds. */
+      const entry = { file, updatedAt: Date.now(), bytes: body.length };
+      state = merge(state, { branding: { [slot]: entry } });
+      persist();
+      broadcast('patch', { branding: { [slot]: entry } });
+      json(res, 200, { ok: true, slot, ...entry });
+    } catch (err) {
+      json(res, err.message === 'file too large' ? 413 : 400, { error: err.message });
+    }
+    return;
+  }
+
+  /* ---- theme reset ---- */
+  if (path === '/api/theme/reset' && req.method === 'POST') {
+    const theme = { ...config.theme };
+    state = merge(state, { theme });
+    persist();
+    broadcast('patch', { theme });
+    json(res, 200, { ok: true, theme });
+    return;
+  }
+
   if (path === '/api/reset' && req.method === 'POST') {
     state = initialState();
     persist();
@@ -233,7 +348,7 @@ const server = createServer(async (req, res) => {
   /* --- static files --- */
 
   try {
-    const target = join(ROOT, normalize(path === '/' ? '/control.html' : path));
+    const target = join(ROOT, normalize(path === '/' ? '/dashboard.html' : path));
     if (!target.startsWith(ROOT + sep) && target !== ROOT) {
       res.writeHead(403).end('Forbidden');
       return;
@@ -287,7 +402,7 @@ server.listen(PORT, HOST, () => {
   console.log(`
   JON_AI_CTRL stream package  —  serving ${ROOT}
 
-  Control page   ${base}/control.html
+  Dashboard      ${base}/dashboard.html
                  (an OBS dock or any browser — Chrome, Edge, another machine
                   on your LAN if you started with --host 0.0.0.0)
 

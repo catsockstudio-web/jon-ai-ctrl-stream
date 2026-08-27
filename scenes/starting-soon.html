@@ -17,6 +17,7 @@
    starting-background.jpg drops in behind the CSS glow field if present. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
+import { motionEnabled } from '../src/js/theme.js';
 import { mascotSlot, terminalLine, countdown, stinger, sceneGround} from '../src/js/components.js';
 import { caffeinePercent } from '../src/js/format.js';
 import { typeOn, fitToHeight } from '../src/js/widgets.js';
@@ -71,7 +72,7 @@ startScene(config, {
   },
   onRender(state, stage) {
     /* TERMINAL TYPE — full-screen scenes only, never over gameplay. */
-    typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+    typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: motionEnabled(state) });
     /* Headline must clear the terminal line, the caffeine block and the
        footer at bottom:150. 300 -> 630 is the space §02 gives it. */
     fitToHeight(stage.querySelector('.ja-scene__headline'), 330);

@@ -90,9 +90,9 @@ while you stream. It binds to `127.0.0.1` unless you pass `--host`.
 > down shows blank; right-click the source → **Refresh** once the server is up.
 > A source that was already open reconnects on its own and resyncs.
 
-## 2. Open the control page
+## 2. Open the dashboard
 
-<http://127.0.0.1:8787/control.html>
+<http://127.0.0.1:8787/dashboard.html>  (or just <http://127.0.0.1:8787>)
 
 **Either an OBS dock or an external browser works** — they are equivalent, and
 you can use both at once:
@@ -103,8 +103,47 @@ you can use both at once:
   use `http://<your-machine-ip>:8787/control.html`.
 
 All of these drive the same overlays, because state lives on the server rather
-than in any one browser. The header shows **SERVER LINKED** while the control
-page can reach it.
+than in any one browser. The header shows **SERVER LINKED** while the dashboard
+can reach it.
+
+`control.html` still works — it redirects here, so an existing OBS dock or
+bookmark does not break.
+
+### The six sections
+
+Preview on the left, controls on the right. Pick a scene under the preview to
+see what you are changing.
+
+| Section | What it covers |
+| --- | --- |
+| **Live Control** | Start / end the stream, today's topic, now playing, countdown, caffeine, the three goals, and test alerts |
+| **Theme** | Two accent colours, glow strength, background brightness, motion level, and a reset |
+| **Branding** | Drag an image onto a slot, or click to browse. The server stores the file and it survives restarts |
+| **Scene Editor** | Choose a scene, edit the text that scene actually uses |
+| **Widgets & Data** | Which modules are on screen, the setup aids, and where the numbers come from |
+| **OBS Setup** | Every browser-source URL with a copy button, the exact size for each, and camera placement |
+
+**Theme is deliberately small.** It recolours and calms the package; it cannot
+move anything, resize anything, or reach the §09 measurements. Amber and
+magenta stay fixed because they carry meaning — money and bits — so recolouring
+them would make alerts harder to read. *Reset theme* returns everything to
+`config.js`.
+
+Motion has three levels: **full** as designed, **reduced** keeps only the live
+status dot and stills everything decorative, **off** freezes the package. Reduced
+is the useful middle setting when OBS is working hard.
+
+**Branding needs no folder editing.** Drop a PNG, JPEG or WebP (up to 8 MB) on a
+slot and the server writes it into `assets/`, records it in state, and pushes it
+to every open source. The file is validated by its actual bytes, not the name or
+the content-type header, so a renamed `.txt` is refused rather than written.
+*Clear* deletes it and the slot returns to its built-in placeholder — every slot
+works with no file at all.
+
+**The Scene Editor edits text, not layout.** There is no on-canvas editing and
+nothing to drag. It lists only the fields a given scene genuinely uses; headlines
+like "THE MORNING GRIND IS STARTING SOON" are part of the design and are not
+offered as editable, rather than shown as a field that does nothing.
 
 ## 3. Add the browser sources
 
@@ -278,6 +317,9 @@ values, and it is well commented throughout.
 | `/api/alert`  | POST | broadcast a one-shot alert |
 | `/api/reset`  | POST | back to `config.js` defaults |
 | `/api/events` | GET  | SSE stream — `state`, `patch`, `alert` |
+| `/api/theme/reset` | POST | theme back to `config.js` |
+| `/api/branding/<slot>` | POST | upload an image (raw body, validated by magic bytes) |
+| `/api/branding/<slot>/clear` | POST | delete it and fall back to the placeholder |
 
 Every new SSE connection is answered with a full `state` event first, which is
 what makes a freshly added source, a refreshed source, and a source that
@@ -319,7 +361,9 @@ status.bat             Windows: is the server running?
 stop.bat               Windows: stop it
 server.log             last run's server output (git-ignored)
 config.js              defaults — the one file you might hand-edit
-control.html           operator control page
+dashboard.html         the dashboard — Live Control, Theme, Branding,
+                       Scene Editor, Widgets & Data, OBS Setup
+control.html           redirect stub, kept so old bookmarks still work
 server.mjs             static host + authoritative state owner (SSE)
 state.json             saved settings, written by the server (git-ignored)
 scenes/                one full 1920 x 1080 page per scene
@@ -339,6 +383,8 @@ src/js/
   store.js             state + subscriptions (knows nothing about transport)
   providers/           where data comes from — the swap point
   transport.js         SSE client + POST helpers
+  theme.js             bounded theme -> CSS tokens, with coercion
+  dashboard.js         the dashboard's own logic
   state.js             state shape and the merge rule
   stage.js             1920 x 1080 stage scaling
   format.js            uptime, caffeine, goal maths
@@ -388,14 +434,25 @@ revisit:
 ```bash
 npm i -D playwright        # dev-only; the package has no runtime dependencies
 node test/acceptance.mjs   # transport — needs no server, starts its own
-node server.mjs &          # alpha suite runs against a live server
-node test/alpha.mjs
+
+node server.mjs &          # the rest run against a live server
+node test/render.mjs       # every page mounts, no script errors
+node test/alpha.mjs        # camera cutouts, masks, assets actually paint
+node test/dashboard.mjs    # the six sections, theming, uploads
 ```
 
 `acceptance.mjs` drives the control page and the overlays in **two separate
 Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,
 so it cannot accidentally pass on same-browser behaviour. It also restarts the
 server mid-run to check reconnection and persistence.
+
+`render.mjs` is the cheapest check and the one that would have caught the two
+worst faults this package has had — a module contract change blanking every
+scene, and a stale cached script doing the same.
+
+`dashboard.mjs` drives the sections a client will actually touch, including a
+deliberately bad upload: a control that silently accepts a bad file is worse
+than one that refuses it loudly.
 
 `alpha.mjs` samples real pixel alpha out of Chromium to prove each camera
 opening is a genuine hole while the scene around it and the chrome over it

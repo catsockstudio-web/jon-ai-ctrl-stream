@@ -19,6 +19,7 @@
    proportions match the design exactly at full resolution. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
+import { motionEnabled } from '../src/js/theme.js';
 import { terminalLine, stinger, sceneGround} from '../src/js/components.js';
 import { typeOn, fitToHeight } from '../src/js/widgets.js';
 import { goalPercent } from '../src/js/format.js';
@@ -62,7 +63,7 @@ startScene(config, {
     `;
   },
   onRender(state, stage) {
-    typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+    typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: motionEnabled(state) });
     /* The column has to clear the footer. Its natural height depends on the
        loaded fonts — with fallback faces the label, terminal and progress rows
        all run taller than the sheet's metrics and the column grows into the

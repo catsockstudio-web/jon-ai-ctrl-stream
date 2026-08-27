@@ -4,3 +4,4 @@ Thumbs.db
 *.log
 state.json
 dist/
+state.acceptance.json

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JON_AI_CTRL — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/css/tokens.css">
+<link rel="stylesheet" href="src/css/base.css">
+<link rel="stylesheet" href="src/css/components.css">
+<link rel="stylesheet" href="src/css/dashboard.css">
+</head>
+<body class="dash">
+<div class="dash">
+
+  <header class="dash-top">
+    <div style="display:flex;align-items:center;gap:18px;min-width:0">
+      <div class="dash-top__brand">JON_AI_CTRL</div>
+      <div style="font-size:13px;color:var(--text-2)">Stream control &amp; customiser</div>
+    </div>
+    <div class="dash-top__status">
+      <span class="dash-top__pill"><span class="ja-dot" id="live-dot"></span><span id="live-label">OFFLINE</span></span>
+      <span class="dash-top__pill"><span id="uptime-readout" style="color:var(--text-1)">--:--:--</span></span>
+      <span class="dash-top__pill" id="link-label" style="color:var(--cyan)">SERVER LINKED</span>
+    </div>
+  </header>
+
+  <div class="dash-body">
+
+    <!-- ---------------- preview ---------------- -->
+    <section class="dash-preview">
+      <div class="dash-preview__frame"><iframe id="preview" title="Scene preview"></iframe></div>
+      <div class="dash-scenes" id="scene-tabs"></div>
+      <p class="dash-panel__intro" style="margin:0">
+        The checkerboard is transparency — game capture and your camera show through there.
+        Changes apply to every open OBS source the moment you make them.
+      </p>
+    </section>
+
+    <!-- ---------------- controls ---------------- -->
+    <section class="dash-controls">
+      <nav class="dash-nav" id="nav"></nav>
+      <div class="dash-panel">
+
+        <!-- ======== LIVE CONTROL ======== -->
+        <div class="dash-section" data-section="live">
+          <p class="dash-panel__intro">Everything you touch while streaming. Changes reach every OBS source instantly and survive a restart.</p>
+          <div class="dash-grid">
+            <div class="ctl-card">
+              <div class="ctl-card__title">SESSION</div>
+              <div class="ctl-btn-row" style="margin-bottom:16px">
+                <button class="ctl-btn ctl-btn--cyan" id="go-live">START STREAM</button>
+                <button class="ctl-btn ctl-btn--ghost" id="end-stream">END</button>
+              </div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="topic">TODAY'S TOPIC</label>
+                <input type="text" id="topic" data-path="stream.topic">
+              </div>
+              <div class="ctl-row">
+                <div class="ctl-field"><label class="ctl-field__label" for="game">NOW PLAYING</label><input type="text" id="game" data-path="stream.game"></div>
+                <div class="ctl-field"><label class="ctl-field__label" for="countdown">COUNTDOWN (MIN)</label><input type="number" id="countdown" min="0" step="1"></div>
+              </div>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">CAFFEINE</div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="caffeine">LEVEL — <span id="caffeine-readout">84%</span></label>
+                <input type="range" id="caffeine" min="0" max="100" step="1" data-path="caffeine.percent">
+              </div>
+              <div class="ctl-row">
+                <div class="ctl-field"><label class="ctl-field__label" for="cup">CUP</label><input type="number" id="cup" min="0" step="1" data-path="caffeine.cup"></div>
+                <div class="ctl-field"><label class="ctl-field__label" for="cups">OF</label><input type="number" id="cups" min="1" step="1" data-path="caffeine.cups"></div>
+              </div>
+              <div class="ctl-toggle" data-toggle="caffeine.autoDecay">
+                <div><div class="ctl-toggle__label">Auto-decay over the session</div><div class="ctl-toggle__hint">Falls from the level above as the stream runs</div></div>
+                <span class="ctl-switch"></span>
+              </div>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">GOALS</div>
+              <div id="goals"></div>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">FIRE AN ALERT</div>
+              <div class="ctl-row">
+                <div class="ctl-field"><label class="ctl-field__label" for="alert-name">NAME</label><input type="text" id="alert-name" value="kayla_tx"></div>
+                <div class="ctl-field"><label class="ctl-field__label" for="alert-amount">AMOUNT / DETAIL</label><input type="text" id="alert-amount" placeholder="$5.00 · TIER 1 · 500"></div>
+              </div>
+              <div class="ctl-field"><label class="ctl-field__label" for="alert-message">MESSAGE</label><input type="text" id="alert-message" placeholder="next round is on me"></div>
+              <div class="ctl-btn-row">
+                <button class="ctl-btn" data-alert="follower">FOLLOWER</button>
+                <button class="ctl-btn ctl-btn--cyan" data-alert="sub">SUB</button>
+                <button class="ctl-btn ctl-btn--amber" data-alert="tip">DONATION</button>
+                <button class="ctl-btn ctl-btn--magenta" data-alert="bits">BITS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== THEME ======== -->
+        <div class="dash-section" data-section="theme">
+          <p class="dash-panel__intro">
+            A deliberately small set of safe controls. These recolour and calm the package;
+            they cannot move anything or change the layout, so there is nothing here you can
+            break. <strong>Reset</strong> puts everything back.
+          </p>
+          <div class="dash-grid">
+            <div class="ctl-card">
+              <div class="ctl-card__title">ACCENTS</div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="accent">PRIMARY — panels, borders, violet gradients</label>
+                <div class="dash-swatch"><input type="color" id="accent" data-theme="accent"><code id="accent-hex">#8B4DFF</code></div>
+              </div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="accentAlt">SECONDARY — highlights, live dot, cyan traces</label>
+                <div class="dash-swatch"><input type="color" id="accentAlt" data-theme="accentAlt"><code id="accentAlt-hex">#22E6E0</code></div>
+              </div>
+              <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">
+                Amber and magenta stay fixed — they mean money and bits, so recolouring them
+                would make alerts harder to read at a glance.
+              </p>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">FEEL</div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="glow">GLOW STRENGTH — <span id="glow-readout">1.00</span></label>
+                <input type="range" id="glow" data-theme="glow" min="0" max="2" step="0.05">
+              </div>
+              <div class="ctl-field">
+                <label class="ctl-field__label" for="background">BACKGROUND BRIGHTNESS — <span id="background-readout">1.00</span></label>
+                <input type="range" id="background" data-theme="background" min="0.6" max="1.4" step="0.02">
+              </div>
+              <div class="ctl-field">
+                <label class="ctl-field__label">MOTION</label>
+                <div class="dash-seg" id="motion-seg">
+                  <button data-motion="off">OFF</button>
+                  <button data-motion="reduced">REDUCED</button>
+                  <button data-motion="full">FULL</button>
+                </div>
+                <div class="ctl-toggle__hint" style="margin-top:8px">
+                  Reduced keeps the live dot and stills everything decorative — useful if OBS is working hard.
+                </div>
+              </div>
+              <div class="ctl-btn-row" style="margin-top:16px">
+                <button class="ctl-btn ctl-btn--ghost" id="theme-reset">RESET THEME</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== BRANDING ======== -->
+        <div class="dash-section" data-section="branding">
+          <p class="dash-panel__intro">
+            Drop an image on a slot, or click it to browse. Files are saved by the server and
+            survive restarts — no folder editing. Every slot works without a file; clearing one
+            returns it to the built-in placeholder.
+            <strong>PNG, JPEG or WebP, up to 8&nbsp;MB.</strong>
+          </p>
+          <div class="dash-grid" id="branding"></div>
+        </div>
+
+        <!-- ======== SCENE EDITOR ======== -->
+        <div class="dash-section" data-section="scenes">
+          <p class="dash-panel__intro">
+            Pick a scene on the left to preview it, then edit its text here. Headlines, sizes and
+            positions are part of the design and are not editable — this changes wording only.
+          </p>
+          <div class="ctl-card" style="max-width:640px">
+            <div class="ctl-card__title" id="scene-editor-title">SCENE TEXT</div>
+            <div id="scene-fields"></div>
+          </div>
+        </div>
+
+        <!-- ======== WIDGETS & DATA ======== -->
+        <div class="dash-section" data-section="widgets">
+          <p class="dash-panel__intro">
+            Which modules are on screen, and where their numbers come from.
+          </p>
+          <div class="dash-grid">
+            <div class="ctl-card">
+              <div class="ctl-card__title">MODULES</div>
+              <div class="ctl-toggle" data-toggle="modules.chat"><div><div class="ctl-toggle__label">Chat panel</div><div class="ctl-toggle__hint">Right column</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.brandBar"><div><div class="ctl-toggle__label">Brand bar</div><div class="ctl-toggle__hint">Top-left identity + live status</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.systemStrip"><div><div class="ctl-toggle__label">System strip</div><div class="ctl-toggle__hint">Uptime · caffeine · node</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.webcam"><div><div class="ctl-toggle__label">Webcam frame</div><div class="ctl-toggle__hint">Border, ticks, nameplate</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.activityTiles"><div><div class="ctl-toggle__label">Activity tiles</div><div class="ctl-toggle__hint">Follower · sub · tip</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.goalRail"><div><div class="ctl-toggle__label">Goal rail</div><div class="ctl-toggle__hint">Bottom edge progress</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="modules.alerts"><div><div class="ctl-toggle__label">Alerts</div><div class="ctl-toggle__hint">Off suppresses and clears the queue</div></div><span class="ctl-switch"></span></div>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">SETUP AIDS</div>
+              <div class="ctl-toggle" data-toggle="display.showSafeArea"><div><div class="ctl-toggle__label">Safe-area guides</div><div class="ctl-toggle__hint">Turn off before going live</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="display.showSampleGameplay"><div><div class="ctl-toggle__label">Sample gameplay plate</div><div class="ctl-toggle__hint">Stand-in for game capture while positioning</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-toggle" data-toggle="display.showCameraPlaceholder"><div><div class="ctl-toggle__label">Camera placeholder</div><div class="ctl-toggle__hint">Covers a live camera — setup only</div></div><span class="ctl-switch"></span></div>
+              <div class="ctl-field" style="margin-top:14px">
+                <label class="ctl-field__label" for="chat-ground">CHAT GROUND</label>
+                <select id="chat-ground" data-path="display.chatGround">
+                  <option value="panel">Panel — 82% ground</option>
+                  <option value="transparent">Transparent — drop-shadowed type</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="ctl-card">
+              <div class="ctl-card__title">DATA SOURCES</div>
+              <div id="providers"></div>
+              <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">
+                Only the manual provider exists today — every number on screen is one you set here
+                or on Live Control. The others are planned, not connected; nothing is silently faked.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== OBS SETUP ======== -->
+        <div class="dash-section" data-section="obs">
+          <p class="dash-panel__intro">
+            Add each of these in OBS as <strong>Sources → + → Browser</strong>, using the exact width and height.
+            Scenes are all 1920 × 1080. Copy a URL with the button on its right.
+          </p>
+          <div class="ctl-card" style="margin-bottom:16px">
+            <div class="ctl-card__title">SCENES — ONE BROWSER SOURCE EACH</div>
+            <div id="obs-scenes"></div>
+          </div>
+          <div class="ctl-card" style="margin-bottom:16px">
+            <div class="ctl-card__title">MODULES — ONLY IF PLACING PIECES SEPARATELY</div>
+            <div id="obs-modules"></div>
+            <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">
+              The scenes above already contain every module. Use these only to position something
+              yourself — and turn the same module off under Widgets so it isn't drawn twice.
+            </p>
+          </div>
+          <div class="ctl-card">
+            <div class="ctl-card__title">CAMERA PLACEMENT</div>
+            <div id="obs-cameras"></div>
+            <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">
+              Put the camera <strong>below</strong> the overlay in OBS — the overlay has a transparent
+              opening for it. On Gameplay, add an <em>Image Mask/Blend</em> filter (Alpha Mask) pointing at
+              <code>obs/camera-mask-gameplay.png</code> so the corners match the frame.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</div>
+<script type="module" src="src/js/dashboard.js"></script>
+</body>
+</html>

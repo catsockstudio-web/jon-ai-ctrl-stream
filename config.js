@@ -78,9 +78,31 @@ export const config = {
     alerts:        true,
   },
 
+  /* Safe, bounded customisation. These are the only visual knobs exposed to
+     an operator: enough to match a brand, not enough to break the design. */
+  theme: {
+    /* Primary and secondary accent. Everything violet/purple derives from the
+       first, everything cyan/blue from the second. Magenta and amber stay
+       fixed because they carry meaning (bits, money). */
+    accent:    '#8B4DFF',
+    accentAlt: '#22E6E0',
+    /* Glow strength, 0 = flat, 1 = as designed, 2 = heavy. */
+    glow: 1,
+    /* Background brightness, 1 = as designed. Below 1 is darker. */
+    background: 1,
+    /* 'full' as designed · 'reduced' keeps only the live dot · 'off' freezes
+       everything (§08 reduced-motion rule). */
+    motion: 'full',
+  },
+
+  /* Uploaded artwork. Empty means "use the CSS fallback"; the dashboard
+     writes here when a file is dropped in, and the server owns the files. */
+  branding: {
+    logo: null, avatar: null, mascot: null, brbArt: null,
+    startingBackground: null, brbBackground: null, endingBackground: null,
+  },
+
   display: {
-    /* Master motion gate (§08). false flattens every animation. */
-    motion: true,
     /* Dashed overlay showing the safe gameplay area — setup aid, not for live. */
     showSafeArea: false,
     /* The striped "SAMPLE GAMEPLAY PLATE" from the design sheet. Defaults

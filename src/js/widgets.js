@@ -6,6 +6,7 @@
 import { formatDuration, formatClock, caffeinePercent, uptimeMs } from './format.js';
 import { alertCard } from './components.js';
 import { bindAssets } from './assets.js';
+import { motionEnabled } from './theme.js';
 
 /* ------------------------------------------------------------
    Ticker — patches time-derived values in place.
@@ -62,7 +63,7 @@ export function createAlertLayer(store, { base = '../', offsetTop = 120 } = {}) 
     const data = queue.shift();
     layer.innerHTML = alertCard(data);
     const card = layer.firstElementChild;
-    bindAssets(layer, store.config, base);
+    bindAssets(layer, store.config, base, store.state);
 
     /* The alert always holds for its full life; motion only decides
        whether it slides in and out or simply appears. */
@@ -73,7 +74,7 @@ export function createAlertLayer(store, { base = '../', offsetTop = 120 } = {}) 
         layer.innerHTML = '';
         showing = false;
         next();
-      }, store.state.display.motion ? EXIT_MS : 0);
+      }, motionEnabled(store.state) ? EXIT_MS : 0);
     }, duration);
   }
 
