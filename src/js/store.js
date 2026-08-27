@@ -2,10 +2,10 @@
    store.js — the only thing scene and module code ever talks to.
 
    The store holds overlay state and fans out changes. It knows
-   nothing about BroadcastChannel, localStorage, Twitch, or the
-   control page; a provider feeds it. Swapping ManualProvider for
-   TwitchProvider changes which code calls applyState() and
-   emitAlert() — and nothing else in the package.
+   nothing about HTTP, SSE, Twitch, or the control page; a provider
+   feeds it. Swapping ManualProvider for TwitchProvider changes
+   which code calls applyState() and emitAlert() — and nothing else
+   in the package.
    ============================================================ */
 
 import { merge, initialState } from './state.js';

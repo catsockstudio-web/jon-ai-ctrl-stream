@@ -17,29 +17,41 @@ motion rule in here).
 
 ## 1. Start the server
 
-OBS browser sources and the control page talk to each other over
-`BroadcastChannel`, and browsers only allow that between pages on the same
-origin. Opening the files directly (`file://`) gives every page a separate
-opaque origin, so the control page could not reach OBS — and ES modules do not
-load over `file://` either. Serving the folder on localhost solves both.
+`server.mjs` is both the static host and the **owner of live overlay state**.
+The control page writes changes to it; every open browser source receives them
+over Server-Sent Events. That matters because the overlays run inside OBS's
+embedded browser while the control page usually does not — and nothing inside
+a browser crosses that line, since `BroadcastChannel` and `localStorage` are
+both scoped to one browser profile.
 
 ```bash
-node server.mjs          # http://127.0.0.1:8787
-node server.mjs 9000     # or pick a port
+node server.mjs                    # http://127.0.0.1:8787
+node server.mjs 9000               # or pick a port
+node server.mjs --host 0.0.0.0     # also reachable from your LAN
 ```
 
-Zero dependencies — it is one file using only Node's standard library. Leave it
-running while you stream. Nothing is exposed beyond `127.0.0.1`.
+Zero dependencies — one file, Node standard library only. Leave it running
+while you stream. It binds to `127.0.0.1` unless you pass `--host`.
 
 > **Start this before OBS.** A browser source that loads while the server is
 > down shows blank; right-click the source → **Refresh** once the server is up.
+> A source that was already open reconnects on its own and resyncs.
 
 ## 2. Open the control page
 
 <http://127.0.0.1:8787/control.html>
 
-Keep it on a second monitor, or add it as a **Custom Browser Dock** in OBS
-(*View → Docks → Custom Browser Docks*) to keep it inside OBS.
+**Either an OBS dock or an external browser works** — they are equivalent, and
+you can use both at once:
+
+- **Inside OBS** — *View → Docks → Custom Browser Docks*, paste the URL.
+- **In any browser** — Chrome, Edge, Firefox, Safari, on a second monitor.
+- **From another machine** on your LAN, if you started with `--host 0.0.0.0`;
+  use `http://<your-machine-ip>:8787/control.html`.
+
+All of these drive the same overlays, because state lives on the server rather
+than in any one browser. The header shows **SERVER LINKED** while the control
+page can reach it.
 
 ## 3. Add the browser sources
 
@@ -147,6 +159,37 @@ values, and it is well commented throughout.
 
 ---
 
+## How the pieces talk
+
+```
+  control page  ──POST /api/state──►  server.mjs  ──SSE /api/events──►  OBS sources
+  (dock, Chrome, ──POST /api/alert──►  (owns state,                     (scenes and
+   Edge, LAN)                          state.json)                       modules)
+```
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/api/state`  | GET  | current snapshot |
+| `/api/state`  | POST | merge a patch, persist, broadcast |
+| `/api/alert`  | POST | broadcast a one-shot alert |
+| `/api/reset`  | POST | back to `config.js` defaults |
+| `/api/events` | GET  | SSE stream — `state`, `patch`, `alert` |
+
+Every new SSE connection is answered with a full `state` event first, which is
+what makes a freshly added source, a refreshed source, and a source that
+outlived a server restart all correct without special handling.
+
+Settings persist to `state.json` beside `server.mjs`, so a restart keeps your
+channel details, goals, module toggles and display options. Alerts are events
+rather than state and are never persisted — a reconnecting source will not
+replay yesterday's followers. A stream start time older than 24 hours is
+treated as stale and cleared, so the overlay does not come up claiming to be
+live from a previous session.
+
+SSE rather than WebSockets: `EventSource` is native to every browser and the
+server side is a few lines of plain `http`, so the package stays
+dependency-free.
+
 ## Adding live Twitch data later
 
 Scene and widget code reads only from the store; a **provider** is the one place
@@ -165,10 +208,12 @@ See `src/js/providers/README.md` for the contract and a worked plan.
 ```
 config.js              defaults — the one file you might hand-edit
 control.html           operator control page
-server.mjs             zero-dependency static server
+server.mjs             static host + authoritative state owner (SSE)
+state.json             saved settings, written by the server (git-ignored)
 scenes/                one full 1920 x 1080 page per scene
 modules/               one page per independently placeable module
 assets/                optional artwork; empty by default
+test/                  acceptance suite (dev-only, needs Playwright)
 src/css/
   tokens.css           §09 design tokens — colours, radii, glows, motion gate
   base.css             reset, stage scaling, §08 motion keyframes
@@ -180,8 +225,8 @@ src/js/
   widgets.js           alert queue, ticker, stinger, type-on
   store.js             state + subscriptions (knows nothing about transport)
   providers/           where data comes from — the swap point
-  bus.js               BroadcastChannel + localStorage mirror
-  state.js             state shape and persistence
+  transport.js         SSE client + POST helpers
+  state.js             state shape and the merge rule
   stage.js             1920 x 1080 stage scaling
   format.js            uptime, caffeine, goal maths
   assets.js            optional-asset probing and override
@@ -209,6 +254,18 @@ revisit:
    Starting Soon column into its footer. `fitToHeight` in `src/js/widgets.js`
    shrinks a headline just enough to fit and restores the authored size once
    the webfont arrives, so with fonts available it never does anything.
+
+## Tests
+
+```bash
+npm i -D playwright        # dev-only; the package has no runtime dependencies
+node test/acceptance.mjs
+```
+
+The suite drives the control page and the overlays in **two separate Chromium
+instances**, which share no `BroadcastChannel` and no `localStorage` — so it
+cannot accidentally pass on same-browser behaviour. It also restarts the server
+mid-run to check reconnection and persistence. See `test/README.md`.
 
 ## Requirements
 

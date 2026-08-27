@@ -3,9 +3,10 @@
 
    Everything here goes through store.commit() / store.fireAlert(),
    which the active provider implements. Nothing in this file knows
-   about BroadcastChannel or localStorage; swap in a live provider
-   and the same controls drive it, minus whatever that provider
-   reports as read-only.
+   how those reach the overlays — the server does that — so this page
+   works identically in an OBS dock or in a separate browser. Swap in
+   a live provider and the same controls drive it, minus whatever
+   that provider reports as read-only.
    ============================================================ */
 
 import config from '../../config.js';
@@ -181,6 +182,13 @@ store.subscribe((state) => {
   $('#live-label').textContent = live ? 'LIVE' : 'OFFLINE';
   $('#live-dot').className = live ? 'ja-dot' : 'ja-dot ja-dot--offline';
   $('#go-live').textContent = live ? 'RESTART STREAM' : 'START STREAM';
+
+  /* The control page may be in a different browser from the overlays, so it
+     says plainly whether it can still reach the server. */
+  const connected = state.connection !== 'lost';
+  const link = $('#link-label');
+  link.textContent = connected ? 'SERVER LINKED' : 'SERVER UNREACHABLE';
+  link.style.color = connected ? 'var(--cyan)' : 'var(--amber)';
 
   document.documentElement.dataset.motion = state.display.motion ? '1' : '0';
 });

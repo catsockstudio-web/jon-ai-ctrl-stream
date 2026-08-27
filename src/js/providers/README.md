@@ -20,8 +20,18 @@ integration land later without rebuilding anything visual.
 | ---------------- | -------- | ------- | ----------------- |
 | `ManualProvider` | `manual` | Shipped | No                |
 
-`ManualProvider` is driven by `control.html` over `BroadcastChannel`, with a
-`localStorage` mirror for persistence and for scenes that open late.
+`ManualProvider` is driven by `control.html` through the server: writes go out
+as `POST /api/state` and `POST /api/alert`, and every connected page receives
+changes over the `GET /api/events` SSE stream. `server.mjs` owns the state and
+persists it to `state.json`.
+
+Because the server mediates, the control page and the overlays do not need to
+share a browser — the control page can run in an OBS dock, in Chrome or Edge,
+or on another machine on the LAN.
+
+A provider that talks to a network service should push into the store exactly
+the same way; the SSE fan-out to other pages is the server's job, not the
+provider's.
 
 ## Planned
 

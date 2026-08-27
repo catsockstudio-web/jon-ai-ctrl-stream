@@ -2,91 +2,66 @@
    manual.js — ManualProvider.
 
    The shipping provider. Data comes from the operator via the
-   control page; there are no credentials, accounts, or network
-   calls anywhere in it.
+   control page; there are no credentials, accounts, or outbound
+   network calls.
 
-   Transport: the bus (BroadcastChannel + localStorage mirror).
-   Persistence: localStorage, so a reopened control page or a
-   restarted OBS comes back exactly as it was.
+   The server owns state. This provider is a thin client of it:
+   reads come from GET /api/state and the SSE stream, writes go
+   out as POSTs. Nothing here depends on the control page sharing
+   a browser with the overlays — which is what lets the control
+   page live in Chrome or Edge while the scenes run inside OBS.
    ============================================================ */
 
 import { Provider } from './provider.js';
-import { createBus } from '../bus.js';
-import { hydrate, saveState } from '../state.js';
+import { fetchState, openStream, postState, postAlert, postReset } from '../transport.js';
 
 export class ManualProvider extends Provider {
   static id = 'manual';
 
-  #bus = null;
-  #unsubscribe = null;
+  #close = null;
 
   get capabilities() { return { edit: true, fireAlerts: true }; }
 
   async start() {
-    /* Restore the last saved snapshot before anything paints, so a
-       scene never flashes defaults on the way to the real values. */
-    this.store.replaceState(hydrate(this.config));
+    /* Fetch before opening the stream so the first paint already has real
+       state; the stream's opening `state` event then keeps it current. */
+    try {
+      this.store.replaceState(await fetchState());
+    } catch (err) {
+      /* Server not up yet. Defaults render, and the stream's first event
+         corrects them as soon as it connects. */
+      console.warn('[manual] could not reach the server for initial state', err);
+    }
 
-    this.#bus = createBus();
-    this.#unsubscribe = this.#bus.subscribe((message) => {
-      switch (message.type) {
-        case 'state:patch':
-          this.store.applyState(message.payload);
-          /* Every page keeps its own mirror current, so whichever page
-             is open last still has the full snapshot to restore from. */
-          saveState(this.store.state);
-          break;
-
-        case 'state:replace':
-          this.store.replaceState(message.payload);
-          saveState(this.store.state);
-          break;
-
-        case 'alert':
-          this.store.emitAlert(message.payload);
-          break;
-
-        /* A scene that opens later asks whoever is listening for the
-           current snapshot. Any page holding state answers. */
-        case 'state:request':
-          this.#bus.post('state:replace', this.store.state);
-          break;
-
-        default:
-          break;
-      }
+    this.#close = openStream({
+      onState: (state) => this.store.replaceState(state),
+      onPatch: (patch) => this.store.applyState(patch),
+      onAlert: (alert) => this.store.emitAlert(alert),
+      onStatus: (status) => this.store.applyState({ connection: status }),
     });
-
-    /* Announce ourselves in case another page has fresher state than
-       what was persisted (e.g. the control page is already open). */
-    this.#bus.post('state:request', null);
   }
 
   stop() {
-    this.#unsubscribe?.();
-    this.#bus?.close();
-    this.#bus = null;
+    this.#close?.();
+    this.#close = null;
   }
 
   publish(patch) {
-    /* Apply locally first so the control page's own UI is never
-       waiting on its own round trip. */
+    /* Apply locally first so the control page's own UI never waits on its
+       own round trip. The server's broadcast then confirms it, and every
+       other client applies the identical patch. */
     this.store.applyState(patch);
-    saveState(this.store.state);
-    this.#bus?.post('state:patch', patch);
+    postState(patch).catch((err) => console.error('[manual] publish failed', err));
   }
 
   publishAlert(alert) {
-    const payload = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...alert };
-    this.store.emitAlert(payload);
-    this.#bus?.post('alert', payload);
+    /* Not applied locally: the server stamps the id and broadcasts to every
+       client including this one, so the alert fires exactly once here. */
+    postAlert(alert).catch((err) => console.error('[manual] alert failed', err));
   }
 
   /** Control-page only: drop saved state and return to config.js defaults. */
   resetToDefaults() {
-    const fresh = hydrate({ ...this.config, __fresh: true });
-    this.store.replaceState(fresh);
-    saveState(this.store.state);
-    this.#bus?.post('state:replace', this.store.state);
+    postReset().catch((err) => console.error('[manual] reset failed', err));
   }
 }
