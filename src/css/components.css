@@ -542,7 +542,12 @@
   border-radius: 8px 40px 8px 40px;
   background: repeating-linear-gradient(135deg, rgba(139, 77, 255, .1) 0 12px, rgba(10, 10, 15, .35) 12px 24px);
   box-shadow: 0 0 70px rgba(139, 77, 255, .2);
-  background-size: cover;
+  /* `contain`, not `cover`: for artwork drawn to the slot's 520x620 the two
+     are identical, but a square logo — which is what most people drop in
+     here — would lose ~16% off each side under `cover`. Nothing gets
+     cropped, whatever shape the file is. */
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center bottom;
 }
 .ja-mascot__eyes {

@@ -232,6 +232,72 @@ async function open(path) {
   }
 }
 
+/* ---------- 6. optional assets actually paint ----------
+   Checking for the `has-asset` class is not enough, and once was not: a
+   url() inside a custom property resolves against the stylesheet rather than
+   the document, so the class went on, the placeholder hid, and the slot
+   painted nothing. Only a pixel proves it. */
+{
+  const { writeFileSync, rmSync } = await import('node:fs');
+  const { deflateSync } = await import('node:zlib');
+
+  /* A solid magenta PNG, distinct from anything in the palette. */
+  const [W, H] = [512, 512];
+  const rgb = [255, 0, 255];
+  const raw = Buffer.concat(Array.from({ length: H }, () =>
+    Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: W }, () => rgb).flat())])));
+  const chunk = (type, data) => {
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(zlib.crc32 ? zlib.crc32(body) >>> 0 : crc32(body) >>> 0);
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    return Buffer.concat([len, body, crc]);
+  };
+  /* Minimal CRC32, so the test needs nothing beyond node:zlib. */
+  function crc32(buf) {
+    let c, crc = 0xffffffff;
+    for (let n = 0; n < buf.length; n += 1) {
+      c = (crc ^ buf[n]) & 0xff;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      crc = c ^ (crc >>> 8);
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
+  ]);
+
+  const target = new URL('../assets/mascot.png', import.meta.url);
+  let preexisting = false;
+  try { (await import('node:fs')).accessSync(target); preexisting = true; } catch { /* none */ }
+
+  if (preexisting) {
+    console.log('SKIP  asset override — assets/mascot.png already exists, not overwriting it');
+  } else {
+    writeFileSync(target, png);
+    const page = await open('/scenes/starting-soon.html');
+    const slot = await page.locator('.ja-mascot').evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height * 0.6,
+               hasAsset: n.classList.contains('has-asset'),
+               url: getComputedStyle(n).backgroundImage };
+    });
+    check('asset override sets the class', slot.hasAsset);
+    check('asset URL resolves against the document, not the stylesheet',
+      !/\/src\/assets\//.test(slot.url), slot.url.slice(0, 60));
+
+    const p = await sample(page, slot.x, slot.y);
+    check('the asset actually paints in the slot',
+      p.r > 230 && p.g < 40 && p.b > 230, `rgb(${p.r},${p.g},${p.b})`);
+    await page.close();
+    rmSync(target);
+  }
+}
+
 await browser.close();
 
 const failed = results.filter(([, ok]) => !ok);

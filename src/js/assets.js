@@ -37,7 +37,14 @@ export async function applyAssetSlot(el, url) {
   if (!el || !url) return false;
   const ok = await probe(url);
   if (!ok) return false;
-  el.style.setProperty('--asset-image', `url("${url}")`);
+  /* Resolve against the DOCUMENT before handing the URL to CSS.
+     A url() inside a custom property is resolved relative to the stylesheet
+     that consumes it, not the page — so '../assets/x.png' set from a scene in
+     /scenes/ would be looked up as /src/assets/x.png by components.css and
+     404. The probe above uses the document's own base, so the two disagreed:
+     the class went on, the placeholder hid, and the slot painted nothing. */
+  const resolved = new URL(url, document.baseURI).href;
+  el.style.setProperty('--asset-image', `url("${resolved}")`);
   el.classList.add('has-asset');
   return true;
 }
