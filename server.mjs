@@ -28,7 +28,7 @@ import { readFile, writeFile, stat, mkdir, readdir, unlink } from 'node:fs/promi
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { defaults, migrate, SCHEMA_VERSION } from './src/js/schema.js';
+import { defaults, migrate, SCHEMA_VERSION, EVENT_RING, EVENT_META } from './src/js/schema.js';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 /* Where settings persist. Overridable with --state so a second instance —
@@ -124,11 +124,45 @@ function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      await writeFile(STATE_FILE, JSON.stringify(state, null, 2));
+      /* The recent-events ring is session history, not settings. Keeping it
+         out of state.json is what stops a restarted overlay from showing
+         yesterday's followers as if they just happened. */
+      const { activity, ...rest } = state;
+      const onDisk = { ...rest, activity: { ...activity, events: [] } };
+      await writeFile(STATE_FILE, JSON.stringify(onDisk, null, 2));
     } catch (err) {
       console.error('  could not write state.json:', err.message);
     }
   }, 250);
+}
+
+/**
+ * Add an alert to the recent-events ring.
+ *
+ * The ring lives in state so a browser source that reconnects gets the list
+ * it missed through the ordinary state sync — no second channel, no replay
+ * logic in the scene. It is stripped before the state is written to disk,
+ * so it is session history and nothing more.
+ */
+function recordEvent(alert) {
+  /* The alert payload calls it "kind"; the stored event calls it "type".
+     Accept either so a future provider posting {type} is not silently
+     dropped from the list while its alert still fires. */
+  const type = alert?.kind ?? alert?.type;
+  if (!EVENT_META[type]) return;
+  const entry = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type,
+    name: String(alert.name ?? '').slice(0, 40),
+    amount: String(alert.amount ?? '').slice(0, 24),
+    tier: String(alert.tier ?? '').slice(0, 24),
+    count: String(alert.count ?? '').slice(0, 12),
+    at: Date.now(),
+  };
+  const events = [entry, ...(state.activity?.events ?? [])].slice(0, EVENT_RING);
+  state = setBranch(state, ['activity', 'events'], events);
+  broadcast('patch', { activity: { events } });
+  persist();
 }
 
 /** Replace one branch of a state tree, returning a new object. */
@@ -274,9 +308,11 @@ const server = createServer(async (req, res) => {
   if (path === '/api/alert' && req.method === 'POST') {
     try {
       const alert = await readBody(req);
-      /* Alerts are events, not state: broadcast, never persisted, so a
-         reconnecting source never replays yesterday's followers. */
+      /* Alerts are events, not settings: broadcast, and never written to
+         state.json, so a restarted overlay never replays yesterday's
+         followers. */
       broadcast('alert', { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...alert });
+      recordEvent(alert);
       json(res, 200, { ok: true });
     } catch (err) {
       json(res, 400, { error: err.message });

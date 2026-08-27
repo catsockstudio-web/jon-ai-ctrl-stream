@@ -175,7 +175,7 @@ encodes, so the work belongs on the compositor.
 
 | Effect | Cost | Animated |
 | --- | --- | --- |
-| Glow / Bloom | low | no |
+| Glow / Bloom | low | no (baseline — see below) |
 | Edge Trace | low | yes |
 | Flicker | low | yes |
 | Scanlines | low | no (movement optional) |
@@ -191,9 +191,33 @@ but suppressed is reported in the UI with the reason — it is never silently
 ignored. **Motion Off** additionally drops every animated effect while leaving
 static ones (glow, RGB split) in place.
 
+**Glow is the one baseline effect**: neither the performance preset nor the
+motion level can suppress it, so `LOW` plus *Motion Off* still looks like a
+designed overlay rather than a broken one. Switching glow off by hand still
+switches it off — baseline is a floor against the automatic gates, not an
+override of the operator.
+
 One honest limitation: **CRT curvature is faked.** A real barrel warp needs a
 displacement filter or WebGL; the effect uses a rounded mask and an inner
 vignette instead, which is convincing at overlay scale and costs almost nothing.
+
+### Recent events
+
+Set **Widgets → Activity → Mode** to *Recent events* and the activity slot
+becomes a live list instead of the three tiles: newest first, one row per
+follower, sub, tip, cheer, raid or gift, each in the accent its type owns.
+
+Rows show the name, what happened, and the type's own detail — the amount for a
+tip, the viewer count for a raid, the tier for a sub. Icons, wording and
+timestamps are individually switchable, and *Compact rows* halves the row
+padding. Which types reach the list is a set of category toggles; turning one
+off hides events of that type immediately, including ones already on screen.
+
+The list holds the last twenty events of the session and shows as many as
+**Max events** allows, so lowering that number reveals history that is already
+there rather than starting the list over. It is **never written to
+`state.json`** — restarting the overlay starts the list empty instead of
+replaying yesterday's followers. The card's RESET clears it on demand.
 
 ### Positions and scale
 
@@ -246,12 +270,18 @@ source"*). Sizes are the authored module sizes — do not stretch them.
 | System strip   | `http://127.0.0.1:8787/modules/system-strip.html`       | 420 × 44    | right-aligned, y32        |
 | Chat           | `http://127.0.0.1:8787/modules/chat.html`               | 360 × 680   | x1528, y120               |
 | Webcam frame   | `http://127.0.0.1:8787/modules/webcam-frame.html`       | 400 × 253\* | x32, y775                 |
-| Activity tiles | `http://127.0.0.1:8787/modules/activity-tiles.html`     | 798 × 70    | x472, y930                |
+| Activity       | `http://127.0.0.1:8787/modules/activity-tiles.html`     | 798 × 70†   | x472, y930                |
 | Goal rail      | `http://127.0.0.1:8787/modules/goal-rail.html`          | 1856 × 30   | x32, y1026                |
 | Alerts         | `http://127.0.0.1:8787/modules/alerts.html`             | 720 × 132   | centred, y120             |
 
 \* The frame itself is 400 × 225; the nameplate hangs 14 px below it, so the
 source needs 253 px of height.
+
+† 798 × 70 draws the three tiles. Switching **Widgets → Activity → Mode** to
+*Recent events* makes the same page draw the events list, which is taller:
+give that source 798 × 480 and it will hold a full ten-row list. Inside a full
+scene source no resizing is needed — the scene anchors the list by its bottom
+edge so it grows upward.
 
 If you use module sources, turn the same module **off** in the scene from the
 control page so it is not drawn twice.
@@ -273,7 +303,7 @@ restarting OBS loses nothing.
 | **Modules**        | Chat panel, brand bar, system strip, webcam frame, activity tiles, goal rail, alerts |
 | **Display**        | Motion gate, safe-area guides, sample gameplay plate, chat ground |
 | **Channel**        | Wordmark, show name, handle, node, camera label, schedule, tagline, offline blurb |
-| **Activity tiles** | The three gameplay tiles (firing an alert updates the matching one for you) |
+| **Activity**       | The three gameplay tiles (firing an alert updates the matching one for you), or the recent-events list |
 | **Scene preview**  | Live preview of any scene; the checkerboard is transparency |
 
 **Positioning tip.** Turn on *Sample gameplay plate* and *Safe-area guides*
@@ -367,8 +397,9 @@ goals         items{follower,sub,coffee} · railGoal
                 each: type, label, current, target, mode, orientation,
                 alignment, scale, thickness, radius, useThemeColors,
                 colors{}, elements{}
-activity      enabled, mode, maxEvents, position, scale, elements{},
-                categories{}, tiles{}, events[]
+activity      enabled, mode (tiles | list), maxEvents, compact, position,
+                scale, elements{}, categories{}, tiles{}
+                events[]  — session-only, never written to state.json
 widgets       brandBar · systemStrip · webcam · goalRail · alerts · chat · activity
                 each: enabled, and position/scale where they apply
 channel       wordmark, showName, handle, node, camLabel, …
@@ -396,6 +427,11 @@ flat shape the package shipped with — and `migrate()` moves it explicitly:
 | `goals.<key>` | `goals.items.<key>` |
 | `display.chatGround` | `chat.mode` |
 | `activity` | `activity.tiles` |
+
+Within v2, a saved document is **topped up** rather than replaced: any setting
+added since it was written appears at its default, and every choice already in
+the file is kept. That is what lets a new control ship without a version bump
+and without resetting an existing install.
 
 Values are carried across one field at a time rather than merged into a shape
 they predate, so an existing install keeps its settings. Uploaded artwork is
@@ -541,8 +577,9 @@ renders is worse than no control, so the suite asserts on computed styles,
 classes and geometry on the page a browser source would load — theme
 propagation, override precedence, override reset falling back to the theme,
 effect toggles and gating, alert timing and the queue, chat typography, goal
-orientation, sub-element toggles, position and scale, resets, v1 migration,
-restart persistence, and two isolated browsers staying in sync.
+orientation, sub-element toggles, position and scale, the recent-events list,
+resets, v1 migration, same-version top-up, restart persistence, and two
+isolated browsers staying in sync.
 
 `acceptance.mjs` drives the control page and the overlays in **two separate
 Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,

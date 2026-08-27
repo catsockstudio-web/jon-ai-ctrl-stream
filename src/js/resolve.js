@@ -104,9 +104,11 @@ export function activeEffects(state, widget = {}) {
   for (const [key, settings] of Object.entries(widget.effects ?? {})) {
     const meta = EFFECTS[key];
     if (!meta || !settings?.on) continue;
-    if (!allow.includes(meta.cost)) continue;         /* too expensive for this preset */
-    if (motion === 'off' && meta.animated) continue;  /* the global gate still wins */
-    if (motion === 'reduced' && meta.animated && meta.cost !== 'low') continue;
+    if (!meta.baseline) {
+      if (!allow.includes(meta.cost)) continue;         /* too expensive for this preset */
+      if (motion === 'off' && meta.animated) continue;  /* the global gate still wins */
+      if (motion === 'reduced' && meta.animated && meta.cost !== 'low') continue;
+    }
     out[key] = settings;
   }
   return out;
@@ -119,7 +121,7 @@ export function suppressedEffects(state, widget = {}) {
   const out = [];
   for (const [key, settings] of Object.entries(widget.effects ?? {})) {
     const meta = EFFECTS[key];
-    if (!meta || !settings?.on) continue;
+    if (!meta || !settings?.on || meta.baseline) continue;
     if (!allow.includes(meta.cost)) out.push([key, `needs ${meta.cost === 'high' ? 'HIGH' : 'BALANCED'} performance`]);
     else if (motion === 'off' && meta.animated) out.push([key, 'motion is off']);
     else if (motion === 'reduced' && meta.animated && meta.cost !== 'low') out.push([key, 'motion is reduced']);

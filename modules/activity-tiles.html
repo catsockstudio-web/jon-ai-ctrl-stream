@@ -14,16 +14,19 @@
 </head>
 <body>
 <script type="module">
-/* Activity tiles — 3 x 250 x 70, gap 16 = 798 x 70. Browser source: 798 x 70. */
+/* Activity — 3 x 250 x 70, gap 16 = 798 x 70. Browser source: 798 x 70.
+   Switching Activity to "Recent events" in the dashboard makes this page
+   draw the list instead, which is taller: give the source 798 x 480 if you
+   intend to use list mode standalone. */
 import config from '../config.js';
 import { startModule } from '../src/js/scene.js';
-import { activityTiles } from '../src/js/components.js';
+import { activityPanel } from '../src/js/components.js';
 
 startModule(config, {
   width: 798,
-  height: 70,
+  height: 480,
   render(state) {
-    return state.widgets.activity.enabled ? `<div style="display:flex;gap:16px">${activityTiles(state)}</div>` : '';
+    return state.widgets.activity.enabled ? activityPanel(state) : '';
   },
 });
 </script>

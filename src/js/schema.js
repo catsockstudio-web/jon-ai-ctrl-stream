@@ -58,7 +58,10 @@ export const FONT_STACKS = {
    Ordered cheapest-first. `cost` drives what the LOW and BALANCED
    performance presets are allowed to run. */
 export const EFFECTS = {
-  glow:        { label: 'Glow / Bloom',     cost: 'low',    animated: false, controls: ['intensity', 'radius'] },
+  /* baseline: never suppressed by performance mode or motion level. Without
+     one effect that always survives, LOW reads as a broken overlay rather
+     than a cheap one. Switching it off by hand still switches it off. */
+  glow:        { label: 'Glow / Bloom',     cost: 'low',    animated: false, baseline: true, controls: ['intensity', 'radius'] },
   edgeTrace:   { label: 'Edge Trace',       cost: 'low',    animated: true,  controls: ['speed', 'brightness'] },
   flicker:     { label: 'Flicker',          cost: 'low',    animated: true,  controls: ['intensity', 'frequency'] },
   scanlines:   { label: 'Scanlines',        cost: 'low',    animated: false, controls: ['opacity', 'spacing', 'speed'] },
@@ -115,6 +118,37 @@ export const DEMO_EVENT = {
   bits:     { name: 'tinygoose',   amount: '500',    message: '', tier: '', count: '500' },
   raid:     { name: 'brewbot_9',   amount: '',       message: '', tier: '', count: '42' },
   giftSub:  { name: 'ctrl_alt_jen', amount: '',      message: '', tier: 'TIER 1', count: '5' },
+};
+
+/* ---------- recent events ---------- */
+
+/* How many events the server keeps. The widget shows at most `maxEvents`;
+   the extra headroom means lowering that setting reveals history that is
+   already there instead of starting the list over. */
+export const EVENT_RING = 20;
+
+export const ACTIVITY_MODES = ['tiles', 'list'];
+
+/* Row styling per event type. The icon is a text glyph on purpose — the
+   package must not require an image file to draw its own UI. */
+export const EVENT_META = {
+  follower: { icon: '+', label: 'followed',   accent: 'primary'   },
+  sub:      { icon: '\u2605', label: 'subscribed', accent: 'secondary' },
+  tip:      { icon: '\u25C6', label: 'tipped',     accent: 'highlight' },
+  bits:     { icon: '\u25B2', label: 'cheered',    accent: 'magenta'   },
+  raid:     { icon: '\u00BB', label: 'raided',     accent: 'secondary' },
+  giftSub:  { icon: '\u2726', label: 'gifted',     accent: 'primary'   },
+};
+
+/* What the list shows next to a name, per type. Same token rules as alert
+   templates: an unknown token is left visible rather than blanked. */
+export const EVENT_TEMPLATES = {
+  follower: '',
+  sub:      '{tier}',
+  tip:      '{amount}',
+  bits:     '{amount}',
+  raid:     '{count} viewers',
+  giftSub:  '{count}',
 };
 
 function alertDefaults(type) {
@@ -236,7 +270,7 @@ export function defaults(config) {
       scale: 1,
       position: 'bottom-center',
       elements: { icon: true, label: true, timestamp: false },
-      categories: { follow: true, sub: true, tip: true, bits: true, raid: true, giftSub: true },
+      categories: Object.fromEntries(ALERT_TYPES.map((t) => [t, true])),
       /* The three gameplay tiles. A live provider replaces these values; the
          labels and accents stay local configuration. */
       tiles: JSON.parse(JSON.stringify(config.activity)),
@@ -272,10 +306,42 @@ export function defaults(config) {
    Existing installs must not lose settings. v1 is the flat-ish shape the
    package shipped with; anything without a version is v1. */
 
+/**
+ * Fill in keys a saved document is missing, without touching what it has.
+ *
+ * This is what lets a new setting ship without a version bump: an existing
+ * document gains the new key at its default and keeps every choice already
+ * made. Arrays are taken from the saved document whole — merging a list of
+ * chat messages item by item would be nonsense.
+ */
+function topUp(base, saved) {
+  if (Array.isArray(base) || Array.isArray(saved)) return saved ?? base;
+  if (!isPlainObject(base)) return saved === undefined ? base : saved;
+  if (!isPlainObject(saved)) return base;
+  const out = { ...saved };
+  for (const [key, value] of Object.entries(base)) {
+    out[key] = topUp(value, saved[key]);
+  }
+  return out;
+}
+
+function isPlainObject(v) {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
 export function migrate(saved, config) {
   if (!saved || typeof saved !== 'object') return defaults(config);
   const version = Number(saved.version) || 1;
-  if (version >= SCHEMA_VERSION) return saved;
+  if (version >= SCHEMA_VERSION) {
+    /* An early v2 document named the follower category "follow". Carry the
+       choice over rather than silently resetting it to on. */
+    const cats = saved.activity?.categories;
+    if (cats && cats.follow !== undefined && cats.follower === undefined) {
+      cats.follower = cats.follow;
+      delete cats.follow;
+    }
+    return topUp(defaults(config), saved);
+  }
 
   const next = defaults(config);
   const carry = (from, to) => { if (from !== undefined && from !== null) return from; return to; };

@@ -186,7 +186,25 @@ async function scene(path = '/scenes/gameplay.html') {
   const off = await page.locator('.ja-alert').first().evaluate((n) => [...n.classList].join(' '));
   const gate = await page.evaluate(() => document.documentElement.dataset.motion);
   check('Motion Off drops animated effects but keeps static ones', gate === '0' && !/fx--noise|fx--crt/.test(off) && /fx--glow/.test(off), `motion=${gate} ${off.slice(0, 60)}`);
-  await patch({ theme: { motionLevel: 'full' } });
+  /* Glow is the one baseline effect: LOW performance and Motion Off together
+     must still leave it on, or the cheapest settings look like a broken
+     overlay rather than a cheap one. */
+  await patch({ theme: { performance: 'low', motionLevel: 'off' } });
+  await page.waitForTimeout(400);
+  await fetch(`${BASE}/api/alert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'follower', name: 'baseline' }) });
+  await page.waitForTimeout(800);
+  const floor = await page.locator('.ja-alert').first().evaluate((n) => [...n.classList].join(' '));
+  check('glow survives the strictest performance and motion settings', /fx--glow/.test(floor), floor.slice(0, 60));
+
+  /* Switching it off by hand still switches it off — baseline is a floor
+     against the automatic gates, not an override of the operator. */
+  await patch({ alerts: { follower: { effects: { glow: { on: false } } } } });
+  await page.waitForTimeout(5600);
+  await fetch(`${BASE}/api/alert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'follower', name: 'glow_off' }) });
+  await page.waitForTimeout(800);
+  const noGlow = await page.locator('.ja-alert').first().evaluate((n) => [...n.classList].join(' '));
+  check('turning glow off by hand still turns it off', !/fx--glow/.test(noGlow), noGlow.slice(0, 60));
+  await patch({ alerts: { follower: { effects: { glow: { on: true } } } }, theme: { performance: 'balanced', motionLevel: 'full' } });
   await page.waitForTimeout(5400);
   await page.close();
 }
@@ -320,6 +338,38 @@ async function scene(path = '/scenes/gameplay.html') {
   check('customisation survives a server restart',
     restored.theme.colors.primary === '#5566ff' && restored.chat.typography.size === 26,
     `${restored.theme.colors.primary} / ${restored.chat.typography.size}px`);
+
+  /* A v2 document written before a setting existed must gain that setting at
+     its default and keep every choice already made — otherwise shipping a new
+     control would mean either a version bump or a reset for existing users. */
+  await stopServer();
+  const aged = JSON.parse(await (await import('node:fs/promises')).readFile(STATE_FILE, 'utf8'));
+  delete aged.activity.categories;
+  delete aged.activity.mode;
+  aged.channel.wordmark = 'KEEP_ME';
+  await writeFile(STATE_FILE, JSON.stringify(aged));
+  startServer();
+  await waitForServer();
+  const topped = await getState();
+  check('a same-version document gains new settings without losing old ones',
+    topped.activity.mode === 'tiles' &&
+    topped.activity.categories?.follower === true &&
+    topped.channel.wordmark === 'KEEP_ME' &&
+    topped.theme.colors.primary === '#5566ff',
+    `mode=${topped.activity.mode} wordmark=${topped.channel.wordmark}`);
+
+  /* The early-v2 category key was "follow". The choice must carry over rather
+     than silently reverting to on. */
+  await stopServer();
+  const oldKey = JSON.parse(await (await import('node:fs/promises')).readFile(STATE_FILE, 'utf8'));
+  oldKey.activity.categories = { follow: false, sub: true };
+  await writeFile(STATE_FILE, JSON.stringify(oldKey));
+  startServer();
+  await waitForServer();
+  const renamed = await getState();
+  check('the renamed follower category carries its old value',
+    renamed.activity.categories.follower === false && renamed.activity.categories.follow === undefined,
+    JSON.stringify(renamed.activity.categories));
 }
 
 /* ============================================================
@@ -346,7 +396,118 @@ async function scene(path = '/scenes/gameplay.html') {
 }
 
 /* ============================================================
-   10. Nothing broke: scenes render, camera stays transparent
+   10. Recent events list
+   ============================================================ */
+{
+  const fire = (body) => fetch(`${BASE}/api/alert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+  await fetch(`${BASE}/api/reset/activity.events`, { method: 'POST' });
+  await patch({ activity: {
+    mode: 'list', maxEvents: 3, compact: false,
+    elements: { icon: true, label: true, timestamp: true },
+    categories: { follower: true, sub: true, tip: true, bits: true, raid: true, giftSub: true },
+  } });
+
+  const page = await scene();
+  const rows = () => page.$$eval('.ja-event', (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ').trim()));
+
+  check('an empty list draws nothing', (await page.locator('.ja-events').count()) === 0);
+
+  for (const [kind, extra] of [['follower', {}], ['tip', { amount: '$5.00' }], ['raid', { count: '42' }]]) {
+    await fire({ kind, name: `${kind}_user`, ...extra });
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(600);
+
+  const listed = await rows();
+  check('alerts land in the recent-events list', listed.length === 3, String(listed.length));
+  check('newest event is first', /raid_user/.test(listed[0] ?? ''), listed[0] ?? '');
+  check('the row carries the type\'s own wording', /raided/.test(listed[0] ?? '') && /tipped/.test(listed[1] ?? ''), (listed[1] ?? '').slice(0, 40));
+  check('type detail is templated in', /42 viewers/.test(listed[0] ?? '') && /\$5\.00/.test(listed[1] ?? ''), listed[0] ?? '');
+
+  /* Each type takes its own accent, so the list is scannable by colour. */
+  const accents = await page.$$eval('.ja-event', (els) => els.map((e) => e.style.getPropertyValue('--event-accent')));
+  check('each event row carries its type accent', new Set(accents).size > 1, accents.join(' '));
+
+  /* maxEvents trims the visible list without losing the history. */
+  await patch({ activity: { maxEvents: 1 } });
+  await page.waitForTimeout(500);
+  check('maxEvents trims the list', (await rows()).length === 1);
+  await patch({ activity: { maxEvents: 3 } });
+  await page.waitForTimeout(500);
+  check('raising maxEvents brings the history back', (await rows()).length === 3);
+
+  /* A category switched off hides events already on screen. */
+  await patch({ activity: { categories: { raid: false } } });
+  await page.waitForTimeout(500);
+  const filtered = await rows();
+  check('a category toggle filters the live list', filtered.length === 2 && !filtered.some((r) => /raided/.test(r)), String(filtered.length));
+  await patch({ activity: { categories: { raid: true } } });
+  await page.waitForTimeout(400);
+
+  /* Timestamps and icons are real sub-element toggles, not decoration. */
+  await patch({ activity: { elements: { timestamp: false, icon: false } } });
+  await page.waitForTimeout(500);
+  const stripped = await page.evaluate(() => ({
+    ago: document.querySelectorAll('.ja-event__ago').length,
+    icon: document.querySelectorAll('.ja-event__icon').length,
+  }));
+  check('event sub-element toggles reach the overlay', stripped.ago === 0 && stripped.icon === 0, JSON.stringify(stripped));
+  await patch({ activity: { elements: { timestamp: true, icon: true } } });
+  await page.waitForTimeout(400);
+
+  /* Compact mode is a real height change, not a class nobody reads. */
+  const tall = await page.locator('.ja-event').first().evaluate((n) => n.getBoundingClientRect().height);
+  await patch({ activity: { compact: true } });
+  await page.waitForTimeout(500);
+  const short = await page.locator('.ja-event').first().evaluate((n) => n.getBoundingClientRect().height);
+  check('compact rows are shorter', short < tall, `${tall} -> ${short}`);
+  await patch({ activity: { compact: false } });
+  await page.waitForTimeout(400);
+
+  /* Switching back to tiles must restore the tiles, not leave the scene empty. */
+  await patch({ activity: { mode: 'tiles' } });
+  await page.waitForTimeout(500);
+  check('switching back to tiles restores the tiles',
+    (await page.locator('.ja-tile').count()) > 0 && (await page.locator('.ja-event').count()) === 0);
+  await patch({ activity: { mode: 'list' } });
+  await page.waitForTimeout(400);
+
+  /* The standalone module must draw the list identically to the scene. */
+  const mod = await ctx.newPage();
+  await mod.setViewportSize({ width: 798, height: 480 });
+  await mod.goto(`${BASE}/modules/activity-tiles.html`, { waitUntil: 'domcontentloaded' });
+  await mod.waitForTimeout(900);
+  const modWidth = await mod.locator('.ja-events').evaluate((n) => Math.round(n.getBoundingClientRect().width)).catch(() => -1);
+  const sceneWidth = await page.locator('.ja-events').evaluate((n) => Math.round(n.getBoundingClientRect().width));
+  check('the module draws the list at the same size as the scene', modWidth === sceneWidth, `${modWidth} vs ${sceneWidth}`);
+  await mod.close();
+
+  /* Ten rows at full size must not leave the frame. */
+  await patch({ activity: { maxEvents: 10 } });
+  for (let i = 0; i < 12; i += 1) await fire({ kind: 'sub', name: `filler_${i}`, tier: 'TIER 3' });
+  await page.waitForTimeout(900);
+  const escaped = await page.$$eval('.ja-event', (els) => els.filter((e) => {
+    const r = e.getBoundingClientRect();
+    return r.right > window.innerWidth + 0.5 || r.bottom > window.innerHeight + 0.5 || r.top < -0.5 || r.left < -0.5;
+  }).length);
+  check('a full list stays inside the frame', escaped === 0, `${await page.locator('.ja-event').count()} rows`);
+
+  /* The ring is session history: it must not be written to disk. */
+  const onDisk = JSON.parse(await (await import('node:fs/promises')).readFile(STATE_FILE, 'utf8'));
+  check('recent events are never persisted', Array.isArray(onDisk.activity?.events) && onDisk.activity.events.length === 0,
+    `${onDisk.activity?.events?.length} on disk`);
+
+  await fetch(`${BASE}/api/reset/activity.events`, { method: 'POST' });
+  await page.waitForTimeout(500);
+  check('RESET clears the list', (await page.locator('.ja-event').count()) === 0);
+
+  await patch({ activity: { mode: 'tiles' } });
+  await page.close();
+}
+
+/* ============================================================
+   11. Nothing broke: scenes render, camera stays transparent
    ============================================================ */
 {
   await fetch(`${BASE}/api/reset`, { method: 'POST' });

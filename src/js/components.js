@@ -9,6 +9,7 @@
 
 import { escapeHtml, goalPercent, goalReadout, formatClock } from './format.js';
 import { widgetColors, renderTemplate, placement } from './resolve.js';
+import { EVENT_META, EVENT_TEMPLATES } from './schema.js';
 
 const CHAT_COLOURS = {
   purple:  'var(--purple)',
@@ -239,6 +240,69 @@ export function activityTiles(state, opts = {}) {
     .filter(Boolean)
     .map((tile) => infoTile(tile, opts))
     .join('');
+}
+
+/* ---------- Recent events list ---------- */
+
+/** How long ago, in the shortest honest form. */
+function agoLabel(then, now) {
+  const secs = Math.max(0, Math.round((now - then) / 1000));
+  if (secs < 60) return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+  return `${Math.floor(secs / 3600)}h`;
+}
+
+/** One row of the recent-events list. */
+export function eventRow(event, cfg, colors) {
+  const meta = EVENT_META[event.type];
+  if (!meta) return '';
+  const el = cfg.elements ?? {};
+  const detail = renderTemplate(EVENT_TEMPLATES[event.type] ?? '', event).trim();
+  const compact = cfg.compact ? ' ja-event--compact' : '';
+  return `
+    <div class="ja-event${compact}" style="--event-accent:${colors.primary}">
+      ${el.icon === false ? '' : `<span class="ja-event__icon">${escapeHtml(meta.icon)}</span>`}
+      <span class="ja-event__name">${escapeHtml(event.name ?? '')}</span>
+      ${el.label === false ? '' : `<span class="ja-event__verb">${escapeHtml(meta.label)}</span>`}
+      ${detail ? `<span class="ja-event__detail">${escapeHtml(detail)}</span>` : ''}
+      ${el.timestamp && event.at ? `<span class="ja-event__ago">${escapeHtml(agoLabel(event.at, cfg.now ?? Date.now()))}</span>` : ''}
+    </div>`;
+}
+
+/**
+ * The recent-events list.
+ *
+ * Newest first, matching chat. Types the streamer has switched off in
+ * `categories` never reach the list, so turning off raids hides the raid
+ * that already happened too — the list reflects the current setting rather
+ * than a frozen history.
+ */
+export function eventList(state, opts = {}) {
+  const cfg = state.activity ?? {};
+  const cats = cfg.categories ?? {};
+  const colors = widgetColors(state, state.widgets?.activity ?? {});
+  const max = Math.max(1, Math.min(Number(cfg.maxEvents) || 3, 20));
+  const rows = (cfg.events ?? [])
+    .filter((e) => e && EVENT_META[e.type] && cats[e.type] !== false)
+    .slice(0, max)
+    .map((e) => eventRow(e, { ...cfg, now: opts.now }, eventColors(state, e)))
+    .join('');
+  /* An empty list draws nothing rather than an empty panel — a quiet stream
+     should not put a box on screen with nothing in it. */
+  return rows ? `<div class="ja-events">${rows}</div>` : '';
+}
+
+/** An event borrows the accent its own type is associated with. */
+function eventColors(state, event) {
+  const widget = state.widgets?.activity ?? {};
+  const accent = EVENT_META[event.type]?.accent ?? 'primary';
+  return widgetColors(state, { ...widget, accent });
+}
+
+/** Tiles or list, whichever the streamer chose. */
+export function activityPanel(state, opts = {}) {
+  if ((state.activity?.mode ?? 'tiles') === 'list') return eventList(state, opts);
+  return `<div style="display:flex;gap:16px">${activityTiles(state, opts.tile)}</div>`;
 }
 
 /* ---------- GoalBar — rail / segmented / mug ---------- */

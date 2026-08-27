@@ -341,6 +341,64 @@
 .ja-tile--amber   { border-left-color: var(--amber);   box-shadow: 0 0 20px rgba(240, 168, 85, .10); }
 .ja-tile--magenta { border-left-color: var(--magenta); box-shadow: 0 0 20px rgba(226, 86, 200, .10); }
 
+/* ---------- Recent events list ---------- */
+/* Authored at a fixed width so the list is identical whether it is drawn
+   inside a scene or as its own browser source, and so the ages line up down
+   the column instead of tracking each name's length. */
+.ja-events {
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ja-event {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 14px;
+  background: rgba(14, 14, 20, .74);
+  border: var(--hairline-w) solid var(--hairline);
+  border-left: var(--accent-w) solid var(--event-accent, var(--violet));
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--event-accent, var(--violet)) 12%, transparent);
+  white-space: nowrap;
+}
+.ja-event--compact { padding: 5px 12px; gap: 8px; }
+.ja-event__icon {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--event-accent, var(--violet));
+  flex: none;
+}
+.ja-event__name {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ja-event__verb {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: .18em;
+  color: var(--text-2);
+}
+.ja-event__detail {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--event-accent, var(--violet));
+}
+/* Pushed right so the ages line up down the column regardless of name length. */
+.ja-event__ago {
+  margin-left: auto;
+  padding-left: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+.ja-event--compact .ja-event__name { font-size: 15px; }
+
 /* ---------- GoalBar : rail / segmented / mug ---------- */
 .ja-goal__head {
   display: flex;

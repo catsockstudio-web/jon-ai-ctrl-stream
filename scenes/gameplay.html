@@ -20,7 +20,7 @@
    safe gameplay area (§09). */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { brandBar, systemStrip, chatBox, webcamFrame, activityTiles, goalRail, samplePlate, safeArea, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
+import { brandBar, systemStrip, chatBox, webcamFrame, activityPanel, goalRail, samplePlate, safeArea, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
 
 startScene(config, {
   alerts: true,
@@ -43,8 +43,12 @@ startScene(config, {
       ${widgets.webcam.enabled ? `
         <div style="position:absolute;left:${CAMERA_OPENINGS.gameplay.x}px;top:${CAMERA_OPENINGS.gameplay.y}px">${webcamFrame(state)}</div>` : ''}
 
-      ${widgets.activity.enabled ? `
-        <div style="position:absolute;left:472px;top:930px;display:flex;gap:16px">${activityTiles(state)}</div>` : ''}
+      ${/* Tiles sit on the baseline row; the recent-events list is taller, so
+            it is anchored by its bottom edge and grows upward instead of
+            pushing itself off the bottom of the frame. */''}
+      ${widgets.activity.enabled ? (state.activity?.mode === 'list'
+        ? `<div style="position:absolute;left:472px;bottom:124px">${activityPanel(state)}</div>`
+        : `<div style="position:absolute;left:472px;top:930px">${activityPanel(state)}</div>`) : ''}
 
       ${widgets.goalRail.enabled ? `
         <div style="position:absolute;left:32px;right:32px;bottom:26px">${goalRail(state)}</div>` : ''}

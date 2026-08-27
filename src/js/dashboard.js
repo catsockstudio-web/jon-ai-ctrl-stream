@@ -96,7 +96,7 @@ const MODULE_SOURCES = [
   ['System strip', 'modules/system-strip.html', '420 × 44'],
   ['Chat', 'modules/chat.html', '360 × 680'],
   ['Webcam frame', 'modules/webcam-frame.html', '400 × 253'],
-  ['Activity tiles', 'modules/activity-tiles.html', '798 × 70'],
+  ['Activity / recent events', 'modules/activity-tiles.html', '798 × 70 (tiles) · 798 × 480 (list)'],
   ['Goal rail', 'modules/goal-rail.html', '1856 × 30'],
   ['Alerts', 'modules/alerts.html', '720 × 132'],
 ];
@@ -138,6 +138,13 @@ const effectControls = (base, key) => {
       return { type: 'range', path: `${base}.${key}.${c}`, label: c, min, max, step };
     }),
   ];
+};
+
+/* Plural nouns for the category toggles — "Followers" reads as a filter,
+   where the ALERT_TYPES key reads as a code identifier. */
+const ALERT_LABELS = {
+  follower: 'Followers', sub: 'Subs', tip: 'Tips',
+  bits: 'Bits', raid: 'Raids', giftSub: 'Gift subs',
 };
 
 function alertsPage(state) {
@@ -322,6 +329,12 @@ function widgetsPage(state) {
         { type: 'toggle', path: 'activity.elements.label', label: 'Labels' },
         { type: 'toggle', path: 'activity.elements.timestamp', label: 'Timestamps' },
         { type: 'range', path: 'activity.scale', label: 'Scale', min: SCALE_RANGE.activity.min, max: SCALE_RANGE.activity.max, step: 0.05 },
+      ]},
+      { title: 'RECENT EVENTS', reset: 'activity.events', controls: [
+        { type: 'note', label: 'Which events reach the list when Activity is set to RECENT EVENTS. Turning a type off hides it immediately, including ones already on screen. RESET clears the list.' },
+        ...ALERT_TYPES.map((t) => ({ type: 'toggle', path: `activity.categories.${t}`, label: ALERT_LABELS[t] })),
+      ], advanced: [
+        { type: 'note', label: 'The list holds the last 20 events of this session. It is never written to disk, so restarting the overlay starts it empty rather than replaying yesterday.' },
       ]},
       { title: 'WEBCAM FRAME', reset: 'widgets.webcam', controls: [
         { type: 'toggle', path: 'widgets.webcam.enabled', label: 'Enabled' },
