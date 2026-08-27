@@ -51,7 +51,11 @@
   --motion: 1;
 
   /* --- type --- */
-  --font-display: 'Chakra Petch', 'Eurostile', 'Rajdhani', system-ui, sans-serif;
+  /* Chakra Petch is condensed; if it fails to load the fallbacks must be
+     too, or headlines set for it wrap an extra line. The fit guard in
+     widgets.js catches whatever still overflows. */
+  --font-display: 'Chakra Petch', 'Rajdhani', 'Oswald', 'Barlow Condensed',
+                  'Roboto Condensed', 'Arial Narrow', system-ui, sans-serif;
   --font-ui:      'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono:    'JetBrains Mono', 'SF Mono', 'Consolas', ui-monospace, monospace;
 

@@ -561,7 +561,12 @@
   color: rgba(234, 234, 242, .5);
 }
 .ja-mascot__caption span { display: block; font-size: 16px; letter-spacing: .16em; margin-top: 8px; color: rgba(234, 234, 242, .35); }
+/* The mascot's steam is larger than the tip-alert mug's (§02). */
 .ja-mascot__steam { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); gap: 12px; height: 60px; }
+.ja-mascot__steam .ja-steam__bar { width: 6px; }
+.ja-mascot__steam .ja-steam__bar:nth-child(1) { height: 34px; }
+.ja-mascot__steam .ja-steam__bar:nth-child(2) { height: 44px; }
+.ja-mascot__steam .ja-steam__bar:nth-child(3) { height: 30px; }
 /* A real mascot.png replaces the whole placeholder treatment. */
 .ja-mascot.has-asset {
   background-image: var(--asset-image);

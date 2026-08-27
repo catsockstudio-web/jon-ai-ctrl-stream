@@ -16,7 +16,7 @@
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
 import { stinger } from '../src/js/components.js';
-import { typeOn } from '../src/js/widgets.js';
+import { typeOn, fitToHeight } from '../src/js/widgets.js';
 
 const BOOT_LINE = '> shutting down morning_grind · see you tomorrow';
 
@@ -44,6 +44,7 @@ startScene(config, {
   },
   onRender(state, stage) {
     typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+    fitToHeight(stage.querySelector('.ja-scene__headline'), 360, { minSize: 90 });
   },
 });
 </script>

@@ -204,6 +204,12 @@ revisit:
    it on. On a live overlay it would cover the game capture; it is a
    positioning aid, so it lives on the control page instead.
 
+3. **Headline sizes assume Chakra Petch has loaded.** The §09 sizes are set for
+   a condensed face; a wider fallback wraps an extra line and would push the
+   Starting Soon column into its footer. `fitToHeight` in `src/js/widgets.js`
+   shrinks a headline just enough to fit and restores the authored size once
+   the webfont arrives, so with fonts available it never does anything.
+
 ## Requirements
 
 Node 18+ (for `server.mjs`) and OBS 28+. Fonts load from Google Fonts and fall

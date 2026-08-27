@@ -116,3 +116,42 @@ export function typeOn(el, text, { charsPerSecond = 28, motion = true } = {}) {
   }, 1000 / charsPerSecond);
   return () => clearInterval(id);
 }
+
+/* ------------------------------------------------------------
+   fitToHeight — keep a scene's text column inside its allotted
+   space.
+
+   Headline sizes come straight from §09 and are correct once
+   Chakra Petch has loaded. If the webfont is unavailable (an
+   offline stream, a blocked CDN) a wider fallback face wraps an
+   extra line and the column grows into whatever sits below it.
+   This shrinks the headline just enough to fit, in 2px steps.
+
+   With the intended font it fits on the first measurement and
+   does nothing at all.
+   ------------------------------------------------------------ */
+export function fitToHeight(el, maxHeight, { minSize = 48, step = 2 } = {}) {
+  if (!el || !maxHeight) return;
+
+  /* The authored size, captured before any shrinking. Scenes set this
+     inline (BRB and Ending are larger than the stylesheet's default), so
+     resetting must restore this number rather than clearing the property
+     and falling back to the class. */
+  const authored = parseFloat(getComputedStyle(el).fontSize);
+  if (!Number.isFinite(authored)) return;
+
+  const run = () => {
+    let size = authored;
+    el.style.fontSize = `${size}px`;
+    /* Bounded: worst case (authored - minSize) / step iterations. */
+    while (el.getBoundingClientRect().height > maxHeight && size > minSize) {
+      size -= step;
+      el.style.fontSize = `${size}px`;
+    }
+  };
+
+  run();
+  /* Re-measure once the webfont arrives, so the common case ends back at
+     the design's size even if the first paint used a fallback face. */
+  document.fonts?.ready?.then(run).catch(() => {});
+}

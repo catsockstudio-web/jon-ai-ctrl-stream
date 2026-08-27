@@ -18,7 +18,7 @@ import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
 import { mascotSlot, terminalLine, countdown, stinger } from '../src/js/components.js';
 import { caffeinePercent } from '../src/js/format.js';
-import { typeOn } from '../src/js/widgets.js';
+import { typeOn, fitToHeight } from '../src/js/widgets.js';
 
 const BOOT_LINE = '> brewing_sequence: initializing';
 
@@ -70,6 +70,9 @@ startScene(config, {
   onRender(state, stage) {
     /* TERMINAL TYPE — full-screen scenes only, never over gameplay. */
     typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+    /* Headline must clear the terminal line, the caffeine block and the
+       footer at bottom:150. 300 -> 630 is the space §02 gives it. */
+    fitToHeight(stage.querySelector('.ja-scene__headline'), 330);
   },
 });
 </script>

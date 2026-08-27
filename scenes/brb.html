@@ -19,7 +19,7 @@
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
 import { terminalLine, stinger } from '../src/js/components.js';
-import { typeOn } from '../src/js/widgets.js';
+import { typeOn, fitToHeight } from '../src/js/widgets.js';
 import { goalPercent } from '../src/js/format.js';
 
 const BOOT_LINE = '> grinder: running · stream: held';
@@ -61,6 +61,7 @@ startScene(config, {
   },
   onRender(state, stage) {
     typeOn(stage.querySelector('[data-bind="terminal-text"]'), BOOT_LINE, { motion: state.display.motion });
+    fitToHeight(stage.querySelector('.ja-scene__headline'), 340, { minSize: 90 });
   },
 });
 </script>
