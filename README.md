@@ -78,8 +78,12 @@ it. You never need to put the camera on top.
 
 | Scene | Camera source size | Position |
 | --- | --- | --- |
-| Gameplay | 400 × 225 | x32, y791 |
+| Gameplay | 400 × 225 | x32, **y775** |
 | Just Chatting | 1160 × 652 | x56, y300 |
+
+Set the camera source to **exactly** these numbers in OBS (Edit → Transform →
+Edit Transform, or drag with the size shown in Properties). This matters more
+than it looks — see the note below.
 
 **Layer order for Gameplay** (top to bottom): overlay browser source → camera →
 game capture.
@@ -95,6 +99,35 @@ placeholder** in the control page's Display panel to fill the opening with the
 striped `CAM_01` plate. It is off by default because it would otherwise paint
 over a live camera — which is exactly the bug it once caused.
 
+### Cropping the camera (Gameplay)
+
+The overlay can only ever *cover* things, never crop them. On **Just Chatting**
+that is enough: the scene's opaque background covers everything outside the
+opening, so an oversized camera is hidden automatically.
+
+**Gameplay is different.** That overlay is transparent everywhere — that is the
+whole point, so game capture shows through — which means nothing covers a
+camera that spills outside the frame. If your camera source is larger than
+400 × 225, or offset from x32/y775, the excess shows on stream *outside* the
+frame border. OBS will not clip it for you.
+
+Two steps fix it:
+
+1. **Size the camera source to exactly 400 × 225 at x32, y775.** Use *Edit
+   Transform*; dragging by eye is not precise enough.
+2. **Apply the rounded-corner mask.** Right-click the camera source →
+   **Filters** → **+** → **Image Mask/Blend**, set *Type* to
+   **Alpha Mask (Alpha Channel)**, and point *Path* at
+   `obs/camera-mask-gameplay.png` in this repo.
+
+Without step 2 the camera shows square corners poking outside the frame's
+rounded border — most visibly at the 20 px top-right and bottom-left corners.
+
+`obs/camera-mask-just-chatting.png` is included for completeness. You do not
+normally need it, because that scene's background already covers the excess.
+Both masks are rendered from the same `border-radius` the frame uses, so they
+cannot drift from the design.
+
 ### Modules — only if you want to place pieces yourself
 
 The scenes above already contain every module. Use these when you would rather
@@ -106,8 +139,8 @@ source"*). Sizes are the authored module sizes — do not stretch them.
 | Brand bar      | `http://127.0.0.1:8787/modules/brand-bar.html`          | 344 × 76    | x32, y32                  |
 | System strip   | `http://127.0.0.1:8787/modules/system-strip.html`       | 420 × 44    | right-aligned, y32        |
 | Chat           | `http://127.0.0.1:8787/modules/chat.html`               | 360 × 680   | x1528, y120               |
-| Webcam frame   | `http://127.0.0.1:8787/modules/webcam-frame.html`       | 400 × 253\* | x32, y791                 |
-| Activity tiles | `http://127.0.0.1:8787/modules/activity-tiles.html`     | 798 × 70    | x472, y946                |
+| Webcam frame   | `http://127.0.0.1:8787/modules/webcam-frame.html`       | 400 × 253\* | x32, y775                 |
+| Activity tiles | `http://127.0.0.1:8787/modules/activity-tiles.html`     | 798 × 70    | x472, y930                |
 | Goal rail      | `http://127.0.0.1:8787/modules/goal-rail.html`          | 1856 × 30   | x32, y1026                |
 | Alerts         | `http://127.0.0.1:8787/modules/alerts.html`             | 720 × 132   | centred, y120             |
 
@@ -231,6 +264,7 @@ state.json             saved settings, written by the server (git-ignored)
 scenes/                one full 1920 x 1080 page per scene
 modules/               one page per independently placeable module
 assets/                optional artwork; empty by default
+obs/                   alpha masks for cropping the camera in OBS
 test/                  acceptance suite (dev-only, needs Playwright)
 src/css/
   tokens.css           §09 design tokens — colours, radii, glows, motion gate
@@ -276,7 +310,13 @@ revisit:
    in OBS. The opening is traced with the frame's own corner radii so no camera
    bleeds past the rounded border.
 
-4. **Headline sizes assume Chakra Petch has loaded.** The §09 sizes are set for
+4. **Gameplay's camera sits 16px above the sheet's y791.** The nameplate hangs
+   14 px below the frame, and at y791 it landed on the goal rail's label
+   (measured: 6 px vertical, 199 px horizontal overlap). The opening moved to
+   y775 so it clears by 10 px, and the activity tiles moved up the same 16 px
+   to keep the bottom band's shared baseline.
+
+5. **Headline sizes assume Chakra Petch has loaded.** The §09 sizes are set for
    a condensed face; a wider fallback wraps an extra line and would push the
    Starting Soon column into its footer. `fitToHeight` in `src/js/widgets.js`
    shrinks a headline just enough to fit and restores the authored size once

@@ -67,7 +67,7 @@ async function sample(page, x, y) {
 }
 
 const OPENINGS = {
-  gameplay:     { x: 32, y: 791, width: 400,  height: 225 },
+  gameplay:     { x: 32, y: 775, width: 400,  height: 225 },
   justChatting: { x: 56, y: 300, width: 1160, height: 652 },
 };
 const centreOf = (o) => [o.x + o.width / 2, o.y + o.height / 2];
@@ -199,6 +199,37 @@ async function open(path) {
   check('Composite: the layer below shows through the opening', isMagenta(throughHole), `rgb(${throughHole.r},${throughHole.g},${throughHole.b})`);
   check('Composite: the layer below is hidden everywhere else', !isMagenta(overScene), `rgb(${overScene.r},${overScene.g},${overScene.b})`);
   await page.close();
+}
+
+/* ---------- 5. shipped OBS camera masks ----------
+   Gameplay's overlay is transparent everywhere, so it cannot crop the camera
+   the way Just Chatting's opaque ground does. The mask in obs/ is what gives
+   the camera the frame's rounded corners, so it must keep matching the
+   opening it was generated from. */
+{
+  const masks = [
+    ['obs/camera-mask-gameplay.png', OPENINGS.gameplay],
+    ['obs/camera-mask-just-chatting.png', OPENINGS.justChatting],
+  ];
+  for (const [file, o] of masks) {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: o.width, height: o.height });
+    await page.setContent(`<style>html,body{margin:0;background:transparent}img{display:block}</style>
+      <img src="${BASE}/${file}">`);
+    await page.waitForTimeout(500);
+
+    const size = await page.locator('img').evaluate((el) => ({ w: el.naturalWidth, h: el.naturalHeight }));
+    check(`${file}: matches the opening size`, size.w === o.width && size.h === o.height, `${size.w}x${size.h} vs ${o.width}x${o.height}`);
+
+    const centre = await sample(page, o.width / 2, o.height / 2);
+    check(`${file}: interior passes the camera`, centre.a === 255, `alpha=${centre.a}`);
+
+    /* Top-right carries the 20px radius; it must be cut away or the camera
+       shows a square corner outside the frame's rounded border. */
+    const corner = await sample(page, o.width - 3, 2);
+    check(`${file}: 20px corner is masked off`, corner.a === 0, `alpha=${corner.a}`);
+    await page.close();
+  }
 }
 
 await browser.close();

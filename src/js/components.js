@@ -99,7 +99,12 @@ export function chatBox(state, { width = 360, height = 680, meta = 'LIVE' } = {}
    record to position its frame AND to punch its ground, so the hole and the
    border can never drift apart. Values are the §09 measurements. */
 export const CAMERA_OPENINGS = {
-  gameplay:     { x: 32, y: 791, width: 400,  height: 225 },
+  /* y775, not the sheet's y791: the nameplate hangs 14px below the frame, and
+     at y791 it landed on top of the goal rail's label (measured: 6px vertical,
+     199px horizontal overlap). Raised 16px so the nameplate clears it by 10px.
+     The activity tiles moved up the same 16px to keep the bottom band's shared
+     baseline from the design sheet. */
+  gameplay:     { x: 32, y: 775, width: 400,  height: 225 },
   justChatting: { x: 56, y: 300, width: 1160, height: 652 },
 };
 
