@@ -15,7 +15,28 @@ motion rule in here).
 
 ---
 
-## Quick start (Windows)
+## Handing this to a client
+
+```bash
+node tools/build-scene-collection.mjs      # regenerate if openings moved
+node tools/build-client-package.mjs        # -> dist/JON_AI_CTRL Stream Package.zip
+```
+
+That ZIP (~73 KB) is the whole client deliverable. They extract it and
+double-click **`Setup.bat`** — nothing else. It installs Node if missing,
+sets the server to run at sign-in, installs a pre-wired OBS scene collection,
+and opens the instructions.
+
+No git, no terminal, no URLs to copy, no source sizes to type. Developer
+files — tests, tooling, this README, the git plumbing — are deliberately left
+out of the ZIP.
+
+The scene collection carries a `__PACKAGE_DIR__` token for the camera mask
+paths, which `Setup.bat` substitutes once it knows where the package landed.
+Rebuild it whenever `CAMERA_OPENINGS` changes, or the client's camera will be
+positioned to the old geometry.
+
+## Quick start (Windows, development)
 
 **Set it and forget it.** Double-click **`install-autostart.bat`** once. The
 server then runs quietly in the background whenever you sign in — before OBS

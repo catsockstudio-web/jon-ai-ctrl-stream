@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JON_AI_CTRL — Start Here</title>
+<style>
+  :root {
+    --bg:#0A0A0F; --panel:#13131C; --violet:#8B4DFF; --purple:#B95CF0;
+    --cyan:#22E6E0; --amber:#F0A855; --text-1:#EAEAF2; --text-2:#8E8FA6;
+    --radius:2px 18px 2px 18px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; padding:48px 24px 96px; background:var(--bg); color:var(--text-1);
+    font-family:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+    line-height:1.6;
+  }
+  .wrap { max-width:820px; margin:0 auto; }
+  .kicker { font-family:ui-monospace,Consolas,monospace; font-size:13px; letter-spacing:.34em; color:var(--cyan); }
+  h1 {
+    font-size:56px; line-height:1; margin:12px 0 8px; font-weight:700; letter-spacing:-.01em;
+    background:linear-gradient(96deg,var(--purple) 0%,var(--violet) 38%,var(--cyan) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub { color:var(--text-2); font-size:19px; margin-bottom:40px; }
+  .step {
+    display:flex; gap:22px; padding:24px 26px; margin-bottom:16px;
+    background:rgba(19,19,28,.82); border:1px solid rgba(139,77,255,.3); border-radius:var(--radius);
+  }
+  .num {
+    flex:none; width:40px; height:40px; border-radius:50%;
+    background:rgba(139,77,255,.18); border:1px solid var(--violet);
+    display:flex; align-items:center; justify-content:center;
+    font-family:ui-monospace,Consolas,monospace; font-weight:700; color:var(--cyan);
+  }
+  .step h2 { margin:4px 0 8px; font-size:22px; font-weight:600; }
+  .step p { margin:0 0 8px; color:var(--text-2); }
+  .step p:last-child { margin-bottom:0; }
+  code {
+    font-family:ui-monospace,Consolas,monospace; font-size:14px; color:var(--cyan);
+    background:rgba(34,230,224,.08); padding:2px 7px; border-radius:4px;
+  }
+  .path { color:var(--amber); }
+  a { color:var(--cyan); }
+  .done { border-color:rgba(34,230,224,.4); }
+  .done .num { background:rgba(34,230,224,.14); border-color:var(--cyan); }
+  h3 { margin:44px 0 14px; font-size:15px; letter-spacing:.24em; color:var(--cyan);
+       font-family:ui-monospace,Consolas,monospace; text-transform:uppercase; }
+  .row { display:flex; gap:14px; padding:14px 18px; margin-bottom:10px;
+         background:rgba(14,14,20,.7); border:1px solid rgba(139,77,255,.2);
+         border-left:2px solid var(--violet); border-radius:2px 12px 2px 12px; }
+  .row b { display:block; margin-bottom:2px; }
+  .row span { color:var(--text-2); font-size:15px; }
+  .row.amber { border-left-color:var(--amber); }
+  .foot { margin-top:56px; padding-top:22px; border-top:1px solid rgba(139,77,255,.25);
+          color:var(--text-2); font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">BROADCAST SYSTEM v1 &nbsp;//&nbsp; OBS PACKAGE</div>
+  <h1>JON_AI_CTRL</h1>
+  <div class="sub">Your stream overlays. Three steps and you're live.</div>
+
+  <div class="step done">
+    <div class="num">✓</div>
+    <div>
+      <h2>Setup has run</h2>
+      <p>The overlay server is running, and it will start again by itself every time
+         you sign in to this PC. You never need to start it by hand.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div>
+      <h2>Open OBS and choose the scenes</h2>
+      <p>In the menu bar: <code>Scene Collection</code> → <code>JON_AI_CTRL</code></p>
+      <p>All six scenes appear, already sized and positioned. Nothing to drag.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">2</div>
+    <div>
+      <h2>Pick your camera</h2>
+      <p>Open the <b>JON · 2 Gameplay</b> scene, double-click
+         <code>Camera — Gameplay</code>, and choose your webcam from the
+         <b>Device</b> list. Click OK.</p>
+      <p>Do the same in <b>JON · 3 Just Chatting</b>. The size, position and rounded
+         corners are already set — only the device is missing.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">3</div>
+    <div>
+      <h2>Open the control panel</h2>
+      <p><a href="http://127.0.0.1:8787/control.html">http://127.0.0.1:8787/control.html</a></p>
+      <p>Start and stop the stream clock, set today's topic, move the goals, fire test
+         alerts, and turn modules on and off. Everything updates on stream instantly.</p>
+      <p>Keep it on a second monitor, or put it inside OBS with
+         <code>View → Docks → Custom Browser Docks</code>.</p>
+    </div>
+  </div>
+
+  <h3>Your own artwork — optional</h3>
+  <div class="row">
+    <div>
+      <b>Drop files into the <span class="path">assets</span> folder</b>
+      <span>
+        <code>mascot.png</code> · <code>avatar.png</code> · <code>logo.png</code> ·
+        <code>starting-background.jpg</code> · <code>brb-background.jpg</code> ·
+        <code>ending-background.jpg</code><br>
+        Use those exact names and they replace the placeholders automatically.
+        The package looks finished without them, so there is no rush.
+      </span>
+    </div>
+  </div>
+
+  <h3>If something looks wrong</h3>
+  <div class="row amber">
+    <div>
+      <b>All the overlays are blank</b>
+      <span>The server isn't running. Double-click <code>Server Status.bat</code> —
+      it will tell you, and <code>Start Server.bat</code> starts it again.</span>
+    </div>
+  </div>
+  <div class="row amber">
+    <div>
+      <b>One overlay looks stale or frozen</b>
+      <span>Right-click that source in OBS → <b>Properties</b> →
+      <b>Refresh cache of current page</b>.</span>
+    </div>
+  </div>
+  <div class="row amber">
+    <div>
+      <b>The camera doesn't line up with its frame</b>
+      <span>Undo any manual resize (<code>Ctrl+Z</code>). The scene collection already
+      places it exactly; dragging it by hand is what knocks it out.</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Everything runs on this PC. Nothing is uploaded, no account is needed, and the
+    server only listens to this machine.
+  </div>
+
+</div>
+</body>
+</html>
