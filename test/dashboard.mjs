@@ -77,6 +77,85 @@ await page.waitForTimeout(700);
 const st3 = await (await fetch(`${BASE}/api/state`)).json();
 check('theme reset restores defaults', st3.theme.colors.primary === '#8B4DFF', st3.theme.colors.primary);
 
+/* Every control in a card must be covered by that card's RESET branches.
+   A card whose RESET leaves some of its own controls behind reads to the user
+   as a button that does not work — which is exactly how the Theme FEEL card
+   shipped, resetting glow but not Motion or Effect performance. This walks
+   the real rendered DOM so a newly added control cannot quietly fall outside
+   the card it sits in. */
+{
+  const orphans = [];
+  for (const id of ['theme', 'alerts', 'chat', 'goals', 'widgets']) {
+    await page.click(`[data-nav="${id}"]`);
+    await page.waitForTimeout(250);
+    const rows = await page.$$eval('.ctl-card', (els) => els.map((c) => {
+      const button = c.querySelector('[data-reset-branch]');
+      if (!button) return null;
+      const paths = [...c.querySelectorAll('[data-ctl],[data-ctl-hex],[data-ctl-seg],[data-ctl-pos],[data-ctl-toggle]')]
+        .map((e) => e.dataset.ctl || e.dataset.ctlHex || e.dataset.ctlSeg || e.dataset.ctlPos || e.dataset.ctlToggle)
+        .filter(Boolean);
+      return {
+        title: c.querySelector('.ctl-card__title')?.textContent.replace('RESET', '').trim(),
+        branches: button.dataset.resetBranch.split(/\s+/).filter(Boolean),
+        paths: [...new Set(paths)],
+      };
+    }).filter(Boolean));
+    for (const r of rows) {
+      const missed = r.paths.filter((path) => !r.branches.some((b) => path === b || path.startsWith(`${b}.`)));
+      if (missed.length) orphans.push(`${id}/${r.title}: ${missed.join(', ')}`);
+    }
+  }
+  check('every card RESET covers all of its own controls', orphans.length === 0, orphans[0] ?? '');
+}
+
+/* And the branches those buttons name must actually have defaults — a typo
+   would otherwise leave a button that posts a 404 and changes nothing. */
+{
+  const branches = await page.$$eval('[data-reset-branch]',
+    (els) => [...new Set(els.flatMap((e) => e.dataset.resetBranch.split(/\s+/)))].filter(Boolean));
+  const dead = [];
+  for (const b of branches) {
+    const res = await fetch(`${BASE}/api/reset/${encodeURIComponent(b)}`, { method: 'POST' });
+    if (!res.ok) dead.push(`${b} -> ${res.status}`);
+  }
+  check('every RESET branch has defaults on the server', dead.length === 0, dead.join(' | ') || `${branches.length} branches`);
+}
+
+/* The three cards whose controls span more than one branch, end to end. */
+{
+  const put = (body) => fetch(`${BASE}/api/state`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const state = async () => (await fetch(`${BASE}/api/state`)).json();
+
+  await page.click('[data-nav="theme"]');
+  await put({ theme: { intensity: { glow: 1.9 }, motionLevel: 'off', performance: 'low' } });
+  await page.waitForTimeout(500);
+  await page.click('[data-reset-branch~="theme.motionLevel"]');
+  await page.waitForTimeout(700);
+  const feel = await state();
+  check('Theme FEEL reset also restores motion and performance',
+    feel.theme.intensity.glow === 1 && feel.theme.motionLevel === 'full' && feel.theme.performance === 'balanced',
+    `glow=${feel.theme.intensity.glow} motion=${feel.theme.motionLevel} perf=${feel.theme.performance}`);
+
+  await page.click('[data-nav="widgets"]');
+  await put({ widgets: { goalRail: { position: 'top-left' } }, goals: { railGoal: 'coffee' } });
+  await page.waitForTimeout(500);
+  await page.click('[data-reset-branch~="goals.railGoal"]');
+  await page.waitForTimeout(700);
+  const rail = await state();
+  check('Goal rail reset also restores which goal it shows',
+    rail.widgets.goalRail.position === 'bottom-center' && rail.goals.railGoal === 'follower',
+    `${rail.widgets.goalRail.position} / ${rail.goals.railGoal}`);
+
+  await put({ activity: { categories: { raid: false, tip: false }, events: [{ id: 'x', type: 'sub', name: 'leftover', at: Date.now() }] } });
+  await page.waitForTimeout(500);
+  await page.click('[data-reset-branch~="activity.categories"]');
+  await page.waitForTimeout(700);
+  const ev = await state();
+  check('Recent events reset restores categories and clears the list',
+    ev.activity.categories.raid === true && ev.activity.categories.tip === true && ev.activity.events.length === 0,
+    `raid=${ev.activity.categories.raid} events=${ev.activity.events.length}`);
+}
+
 // scene editor
 await page.click('[data-nav="scenes"]');
 await page.click('[data-scene="offline"]');

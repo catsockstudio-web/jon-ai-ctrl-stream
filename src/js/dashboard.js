@@ -313,7 +313,7 @@ function widgetsPage(state) {
         { type: 'toggle', path: 'widgets.systemStrip.enabled', label: 'Enabled' },
         { type: 'position', path: 'widgets.systemStrip.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.systemStrip },
       ]},
-      { title: 'GOAL RAIL', reset: 'widgets.goalRail', controls: [
+      { title: 'GOAL RAIL', reset: ['widgets.goalRail', 'goals.railGoal'], controls: [
         { type: 'toggle', path: 'widgets.goalRail.enabled', label: 'Enabled' },
         { type: 'select', path: 'goals.railGoal', label: 'Which goal', options: Object.keys(state.goals?.items ?? {}).map((k) => [k, k.toUpperCase()]) },
         { type: 'position', path: 'widgets.goalRail.position', label: 'Position', options: POS_ALL, allowed: POSITIONS_FOR.goal },
@@ -330,8 +330,8 @@ function widgetsPage(state) {
         { type: 'toggle', path: 'activity.elements.timestamp', label: 'Timestamps' },
         { type: 'range', path: 'activity.scale', label: 'Scale', min: SCALE_RANGE.activity.min, max: SCALE_RANGE.activity.max, step: 0.05 },
       ]},
-      { title: 'RECENT EVENTS', reset: 'activity.events', controls: [
-        { type: 'note', label: 'Which events reach the list when Activity is set to RECENT EVENTS. Turning a type off hides it immediately, including ones already on screen. RESET clears the list.' },
+      { title: 'RECENT EVENTS', reset: ['activity.categories', 'activity.events'], controls: [
+        { type: 'note', label: 'Which events reach the list when Activity is set to RECENT EVENTS. Turning a type off hides it immediately, including ones already on screen. RESET turns every type back on and clears the list.' },
         ...ALERT_TYPES.map((t) => ({ type: 'toggle', path: `activity.categories.${t}`, label: ALERT_LABELS[t] })),
       ], advanced: [
         { type: 'note', label: 'The list holds the last 20 events of this session. It is never written to disk, so restarting the overlay starts it empty rather than replaying yesterday.' },
@@ -402,7 +402,7 @@ function themePage(state) {
         { type: 'color', path: 'theme.colors.text', label: 'Main text' },
         { type: 'color', path: 'theme.colors.textDim', label: 'Secondary text' },
       ]},
-      { title: 'FEEL', reset: 'theme.intensity', controls: [
+      { title: 'FEEL', reset: ['theme.intensity', 'theme.motionLevel', 'theme.performance'], controls: [
         { type: 'range', path: 'theme.intensity.glow', label: 'Glow intensity', min: 0, max: 2, step: 0.05 },
         { type: 'range', path: 'theme.intensity.backgroundBrightness', label: 'Background brightness', min: 0.6, max: 1.4, step: 0.02 },
         { type: 'segmented', path: 'theme.motionLevel', label: 'Motion', options: [['off', 'OFF'], ['reduced', 'REDUCED'], ['full', 'FULL']] },
@@ -473,12 +473,15 @@ function renderPages(state) {
 
 /* ---------- resets ---------- */
 async function reset(kind, target) {
-  if (kind === 'control') {
-    /* One control: ask the server for that branch's default. */
-    await fetch(`/api/reset/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
-    return;
+  /* A card may name several branches; a single control names exactly one.
+     Either way the server owns the defaults, so the page never carries a
+     second copy of them that could drift. */
+  for (const branch of String(target).split(/\s+/).filter(Boolean)) {
+    const res = await fetch(`/api/reset/${encodeURIComponent(branch)}`, { method: 'POST' }).catch(() => null);
+    /* A branch with no defaults is a wiring mistake, not a user error —
+       say so in the console rather than leaving a button that does nothing. */
+    if (!res?.ok) console.error(`[dashboard] reset failed for "${branch}"`, res?.status ?? 'no response');
   }
-  await fetch(`/api/reset/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
 }
 
 bindControls(document.querySelector('.dash-panel'), store, { onReset: reset });

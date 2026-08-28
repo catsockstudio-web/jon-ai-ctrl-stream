@@ -92,7 +92,11 @@ function field(ctrl) {
  *   title    card heading
  *   controls basic controls, always visible
  *   advanced controls behind a disclosure
- *   reset    a state branch this card's "reset" button restores
+ *   reset    the state branch, or branches, this card's "reset" button
+ *            restores. A card whose controls span more than one branch —
+ *            Theme's FEEL holds theme.intensity alongside theme.motionLevel —
+ *            must name them all, or RESET leaves the strays behind and reads
+ *            as a broken button.
  */
 export function card(group) {
   const advanced = group.advanced?.length ? `
@@ -100,7 +104,10 @@ export function card(group) {
       <summary>ADVANCED</summary>
       <div class="dash-adv__body">${group.advanced.map(field).join('')}</div>
     </details>` : '';
-  const reset = group.reset ? `<button class="ctl-btn ctl-btn--ghost dash-card__reset" data-reset-branch="${esc(group.reset)}">RESET</button>` : '';
+  const branches = [group.reset].flat().filter(Boolean);
+  const reset = branches.length
+    ? `<button class="ctl-btn ctl-btn--ghost dash-card__reset" data-reset-branch="${esc(branches.join(' '))}">RESET</button>`
+    : '';
   return `
     <div class="ctl-card">
       <div class="ctl-card__title">${esc(group.title)}${reset}</div>
