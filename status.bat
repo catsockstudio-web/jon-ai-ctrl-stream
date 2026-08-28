@@ -5,7 +5,7 @@ powershell -NoProfile -Command ^
   "  $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/api/state' -UseBasicParsing -TimeoutSec 3;" ^
   "  Write-Host '';" ^
   "  Write-Host '  Server is RUNNING (HTTP' $r.StatusCode ')';" ^
-  "  Write-Host '  Control page: http://127.0.0.1:8787/control.html';" ^
+  "  Write-Host '  Dashboard: http://127.0.0.1:8787/dashboard.html';" ^
   "} catch {" ^
   "  Write-Host '';" ^
   "  Write-Host '  Server is NOT running.';" ^

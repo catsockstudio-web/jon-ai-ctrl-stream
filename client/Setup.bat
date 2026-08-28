@@ -99,6 +99,6 @@ echo     Everything else is already positioned.
 echo.
 echo   Opening the instructions and the control panel...
 start "" "%PKG%\START HERE.html"
-start "" http://127.0.0.1:8787/control.html
+start "" http://127.0.0.1:8787/dashboard.html
 echo.
 pause

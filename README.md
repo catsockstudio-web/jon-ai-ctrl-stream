@@ -100,7 +100,7 @@ you can use both at once:
 - **Inside OBS** — *View → Docks → Custom Browser Docks*, paste the URL.
 - **In any browser** — Chrome, Edge, Firefox, Safari, on a second monitor.
 - **From another machine** on your LAN, if you started with `--host 0.0.0.0`;
-  use `http://<your-machine-ip>:8787/control.html`.
+  use `http://<your-machine-ip>:8787/dashboard.html`.
 
 All of these drive the same overlays, because state lives on the server rather
 than in any one browser. The header shows **SERVER LINKED** while the dashboard
