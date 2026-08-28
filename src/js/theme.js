@@ -112,11 +112,13 @@ export function applyTheme(theme, root = document.documentElement) {
   root.style.setProperty('--hairline', rgba(primary, clamp(0.30 * i.borderBrightness, 0.05, 1)));
   root.style.setProperty('--hairline-soft', rgba({ r: 255, g: 255, b: 255 }, clamp(0.08 * i.borderBrightness, 0.02, 0.4)));
 
-  const g = i.glow;
-  root.style.setProperty('--glow-violet', `0 0 ${28 * g}px ${rgba(primary, 0.18 * g)}`);
-  root.style.setProperty('--glow-cyan',   `0 0 ${24 * g}px ${rgba(secondary, 0.22 * g)}`);
-  root.style.setProperty('--glow-alert',  `0 0 ${44 * g}px ${rgba(primary, 0.30 * g)}`);
-  root.style.setProperty('--glow-scale', String(g));
+  /* Glow is one number. Every accent shadow in the stylesheets is written as
+     calc(<blur> * var(--glow-scale)) with a color-mix against its own accent
+     token, so setting the scale here reaches all of them and each keeps the
+     colour it is supposed to follow. Baking resolved rgba into --glow-* here
+     used to leave the ~25 shadows that never referenced those tokens frozen
+     at the shipped purple, ignoring both this slider and the accent. */
+  root.style.setProperty('--glow-scale', String(i.glow));
 
   /* A package-wide scanline wash, separate from the per-alert effect. */
   root.style.setProperty('--scanline-opacity', String(i.scanlines));
@@ -131,7 +133,7 @@ export function applyTheme(theme, root = document.documentElement) {
 export function clearTheme(root = document.documentElement) {
   for (const prop of ['--violet', '--purple', '--cyan', '--blue', '--amber', '--text-1', '--text-2',
     '--bg', '--panel-bg', '--hairline', '--hairline-soft',
-    '--glow-violet', '--glow-cyan', '--glow-alert', '--glow-scale', '--scanline-opacity']) {
+    '--glow-scale', '--scanline-opacity']) {
     root.style.removeProperty(prop);
   }
   delete root.dataset.motionLevel;

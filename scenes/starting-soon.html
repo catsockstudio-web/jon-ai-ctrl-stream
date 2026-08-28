@@ -54,7 +54,7 @@ startScene(config, {
           <div style="display:flex;flex-direction:column;gap:10px">
             <div class="ja-label ja-label--lg">CAFFEINE LEVEL</div>
             <div style="width:320px;height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden">
-              <div style="width:${caffeine}%;height:100%;background:linear-gradient(90deg,var(--amber),var(--purple));box-shadow:0 0 16px rgba(240,168,85,.5);transition:width 600ms var(--ease)"></div>
+              <div style="width:${caffeine}%;height:100%;background:linear-gradient(90deg,var(--amber),var(--purple));box-shadow:0 0 calc(16px * var(--glow-scale)) color-mix(in srgb, var(--amber) calc(50% * var(--glow-scale)), transparent);transition:width 600ms var(--ease)"></div>
             </div>
             <div style="font-family:var(--font-mono);font-size:18px;color:var(--amber)">${caffeine}% · CUP ${state.caffeine.cup} OF ${state.caffeine.cups}</div>
           </div>

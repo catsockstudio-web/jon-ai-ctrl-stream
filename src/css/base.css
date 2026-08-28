@@ -112,9 +112,9 @@ body:not(.control) {
 
 /* EYE BLOOM — 180ms flash to 1.4x glow radius when an alert lands. */
 @keyframes ja-eye-bloom {
-  0%   { box-shadow: 0 0 14px currentColor; }
-  50%  { box-shadow: 0 0 20px currentColor, 0 0 34px currentColor; }
-  100% { box-shadow: 0 0 14px currentColor; }
+  0%   { box-shadow: 0 0 calc(14px * var(--glow-scale)) currentColor; }
+  50%  { box-shadow: 0 0 calc(20px * var(--glow-scale)) currentColor, 0 0 calc(34px * var(--glow-scale)) currentColor; }
+  100% { box-shadow: 0 0 calc(14px * var(--glow-scale)) currentColor; }
 }
 
 /* SCENE GLITCH — 260ms stinger: RGB offset, scanline shear, violet->cyan wipe. */

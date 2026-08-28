@@ -31,10 +31,19 @@
   --radius-sm:   2px 12px 2px 12px;
   --radius-lg:   4px 28px 4px 28px;
 
-  /* --- glows --- */
-  --glow-violet: 0 0 28px rgba(139, 77, 255, .18);
-  --glow-cyan:   0 0 24px rgba(34, 230, 224, .22);
-  --glow-alert:  0 0 44px rgba(139, 77, 255, .30);
+  /* --- glows ---
+     Every accent glow in the package is written as
+       0 0 calc(<blur>px * var(--glow-scale))
+       color-mix(in srgb, var(--accent) calc(<pct>% * var(--glow-scale)), transparent)
+     so it follows both the Theme accent and the Glow intensity slider.
+     theme.js overwrites --glow-scale from theme.intensity.glow; this value is
+     the fallback for a page rendered before that runs. Hardcoding an accent
+     colour in a shadow silently opts that element out of the theme, which is
+     exactly the bug this replaced. */
+  --glow-scale:  1;
+  --glow-violet: 0 0 calc(28px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(18% * var(--glow-scale)), transparent);
+  --glow-cyan:   0 0 calc(24px * var(--glow-scale)) color-mix(in srgb, var(--cyan)   calc(22% * var(--glow-scale)), transparent);
+  --glow-alert:  0 0 calc(44px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(30% * var(--glow-scale)), transparent);
 
   /* --- space scale --- */
   --space-1:  8px;

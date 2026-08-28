@@ -210,6 +210,63 @@ async function scene(path = '/scenes/gameplay.html') {
 }
 
 /* ============================================================
+   3b. Glow intensity and accent actually reach the pixels
+   ============================================================ */
+{
+  /* The Glow intensity slider used to write state that almost nothing read:
+     ~25 shadows across the stylesheets hardcoded the shipped purple, so the
+     slider moved and the overlay did not change — and neither did the glow
+     colour when the accent changed. These checks read computed shadows off a
+     live scene, which is the only way that class of bug shows up. */
+  const page = await scene();
+  const shadows = () => page.evaluate(() => {
+    const pick = (sel) => {
+      const el = document.querySelector(sel);
+      return el ? getComputedStyle(el).boxShadow : '';
+    };
+    return { brand: pick('.ja-brand-bar'), chat: pick('.ja-chat'), cam: pick('.ja-webcam__frame') };
+  });
+
+  await patch({ theme: { colors: { primary: '#8B4DFF' }, intensity: { glow: 1 } } });
+  await page.waitForTimeout(600);
+  const base = await shadows();
+  await patch({ theme: { intensity: { glow: 2 } } });
+  await page.waitForTimeout(600);
+  const doubled = await shadows();
+  check('glow intensity changes rendered shadows',
+    base.brand !== doubled.brand && base.chat !== doubled.chat && base.cam !== doubled.cam,
+    `${base.brand.slice(0, 44)} -> ${doubled.brand.slice(0, 44)}`);
+
+  /* Radius must actually grow, not merely differ. In a computed box-shadow the
+     lengths run offset-x, offset-y, blur, spread — so the blur is the third. */
+  const blur = (s) => Number((s.match(/(-?\d+(?:\.\d+)?)px/g) ?? [])[2]?.replace('px', '') ?? 0);
+  check('doubling glow widens the blur radius', blur(doubled.brand) > blur(base.brand),
+    `${blur(base.brand)}px -> ${blur(doubled.brand)}px`);
+
+  await patch({ theme: { intensity: { glow: 0 } } });
+  await page.waitForTimeout(600);
+  const off = await page.evaluate(() => [...document.querySelectorAll('*')]
+    .map((el) => getComputedStyle(el).boxShadow)
+    .filter((sh) => sh && sh !== 'none')
+    /* A shadow is genuinely off when it is fully transparent or has no radius.
+       Black and white shadows are depth, not glow, and are not themed. */
+    .filter((sh) => !/\/ 0\)/.test(sh) && !/0px 0px 0px 0px/.test(sh)
+                 && !/rgba\(0, 0, 0/.test(sh) && !/rgba\(255, 255, 255/.test(sh)));
+  check('glow 0 leaves no accent glow drawn', off.length === 0, off[0]?.slice(0, 60) ?? '');
+
+  /* And the glow must be the accent's colour, not a colour baked into CSS. */
+  await patch({ theme: { colors: { primary: '#FF0000' }, intensity: { glow: 1 } } });
+  await page.waitForTimeout(600);
+  const red = await shadows();
+  const isRed = (s) => /rgba?\(255, 0, 0|color\(srgb 1 0 0/.test(s);
+  check('accent glows follow the theme colour', isRed(red.brand) && isRed(red.chat) && isRed(red.cam), red.brand.slice(0, 50));
+
+  await patch({ theme: { colors: { primary: '#8B4DFF' }, intensity: { glow: 1 } } });
+  await page.waitForTimeout(400);
+  await page.close();
+}
+
+/* ============================================================
    4. Chat customisation
    ============================================================ */
 {

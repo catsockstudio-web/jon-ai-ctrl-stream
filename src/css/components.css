@@ -51,7 +51,7 @@
   background: rgba(10, 10, 15, .72);
   border: var(--hairline-w) solid rgba(139, 77, 255, .34);
   border-radius: 2px 18px 2px 18px;
-  box-shadow: 0 0 28px rgba(139, 77, 255, .16), inset 0 1px 0 rgba(255, 255, 255, .05);
+  box-shadow: 0 0 calc(28px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(16% * var(--glow-scale)), transparent), inset 0 1px 0 rgba(255, 255, 255, .05);
 }
 .ja-brand-bar__text     { display: flex; flex-direction: column; gap: 6px; }
 .ja-brand-bar__wordmark {
@@ -83,12 +83,12 @@
   height: 7px;
   border-radius: 50%;
   background: var(--cyan);
-  box-shadow: 0 0 9px var(--cyan);
+  box-shadow: 0 0 calc(9px * var(--glow-scale)) var(--cyan);
   flex: none;
   animation: ja-pulse calc(2.6s * var(--motion)) ease-in-out infinite;
 }
-.ja-dot--lg      { width: 9px; height: 9px; box-shadow: 0 0 12px var(--cyan); }
-.ja-dot--magenta { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); animation-duration: calc(2s * var(--motion)); }
+.ja-dot--lg      { width: 9px; height: 9px; box-shadow: 0 0 calc(12px * var(--glow-scale)) var(--cyan); }
+.ja-dot--magenta { background: var(--magenta); box-shadow: 0 0 calc(8px * var(--glow-scale)) var(--magenta); animation-duration: calc(2s * var(--motion)); }
 .ja-dot--offline { background: var(--text-2); box-shadow: none; animation: none; }
 
 /* ---------- Avatar : eye-pair fallback, image override ---------- */
@@ -101,7 +101,7 @@
   flex: none;
   background: repeating-linear-gradient(45deg, #1A1526 0 5px, #141020 5px 10px);
   border: var(--hairline-w) solid rgba(34, 230, 224, .4);
-  box-shadow: 0 0 18px rgba(34, 230, 224, .18);
+  box-shadow: 0 0 calc(18px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(18% * var(--glow-scale)), transparent);
   background-size: cover;
   background-position: center;
 }
@@ -113,7 +113,7 @@
   border-radius: 50%;
   background: var(--cyan);
   color: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan);
+  box-shadow: 0 0 calc(12px * var(--glow-scale)) var(--cyan);
   animation: ja-eye calc(7s * var(--motion)) linear infinite;
 }
 .ja-avatar__eye--l { left: 13px; }
@@ -133,7 +133,7 @@
   border: var(--hairline-w) solid rgba(139, 77, 255, .28);
   border-radius: 2px 14px 2px 14px;
   overflow: hidden;
-  box-shadow: 0 0 22px rgba(139, 77, 255, .12);
+  box-shadow: 0 0 calc(22px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(12% * var(--glow-scale)), transparent);
 }
 .ja-system-strip__cell {
   display: flex;
@@ -165,7 +165,7 @@
   border-radius: 2px 20px 2px 20px;
   overflow: hidden;
   background: transparent;
-  box-shadow: 0 0 36px rgba(139, 77, 255, .2);
+  box-shadow: 0 0 calc(36px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(20% * var(--glow-scale)), transparent);
 }
 
 /* Setup/debug only: the striped plate and CAM_01 caption from the design
@@ -173,7 +173,7 @@
    default — it would paint over a live camera. */
 .ja-webcam--placeholder .ja-webcam__frame {
   background: repeating-linear-gradient(135deg, #15111F 0 8px, #100D18 8px 16px);
-  box-shadow: 0 0 36px rgba(139, 77, 255, .2), inset 0 0 40px rgba(0, 0, 0, .5);
+  box-shadow: 0 0 calc(36px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(20% * var(--glow-scale)), transparent), inset 0 0 40px rgba(0, 0, 0, .5);
 }
 .ja-webcam__fallback {
   position: absolute;
@@ -242,7 +242,7 @@
   border: var(--hairline-w) solid var(--hairline);
   border-radius: 2px 18px 2px 18px;
   overflow: hidden;
-  box-shadow: 0 0 34px rgba(139, 77, 255, .14);
+  box-shadow: 0 0 calc(34px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(14% * var(--glow-scale)), transparent);
 }
 /* Second ground: fully transparent, same type, drop-shadowed (§07). */
 .ja-chat--transparent {
@@ -315,7 +315,7 @@
   border: var(--hairline-w) solid rgba(139, 77, 255, .28);
   border-left: var(--accent-w) solid var(--violet);
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 20px rgba(139, 77, 255, .12);
+  box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(12% * var(--glow-scale)), transparent);
 }
 .ja-tile__kicker {
   font-family: var(--font-mono);
@@ -336,10 +336,10 @@
 }
 /* Accent selects meaning: violet identity, cyan community,
    amber coffee/money, magenta bits (§07). */
-.ja-tile--violet  { border-left-color: var(--violet);  box-shadow: 0 0 20px rgba(139, 77, 255, .12); }
-.ja-tile--cyan    { border-left-color: var(--cyan);    box-shadow: 0 0 20px rgba(34, 230, 224, .10); }
-.ja-tile--amber   { border-left-color: var(--amber);   box-shadow: 0 0 20px rgba(240, 168, 85, .10); }
-.ja-tile--magenta { border-left-color: var(--magenta); box-shadow: 0 0 20px rgba(226, 86, 200, .10); }
+.ja-tile--violet  { border-left-color: var(--violet);  box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(12% * var(--glow-scale)), transparent); }
+.ja-tile--cyan    { border-left-color: var(--cyan);    box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(10% * var(--glow-scale)), transparent); }
+.ja-tile--amber   { border-left-color: var(--amber);   box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--amber) calc(10% * var(--glow-scale)), transparent); }
+.ja-tile--magenta { border-left-color: var(--magenta); box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--magenta) calc(10% * var(--glow-scale)), transparent); }
 
 /* ---------- Recent events list ---------- */
 /* Authored at a fixed width so the list is identical whether it is drawn
@@ -360,7 +360,7 @@
   border: var(--hairline-w) solid var(--hairline);
   border-left: var(--accent-w) solid var(--event-accent, var(--violet));
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--event-accent, var(--violet)) 12%, transparent);
+  box-shadow: 0 0 calc(20px * var(--glow-scale)) color-mix(in srgb, var(--event-accent, var(--violet)) calc(12% * var(--glow-scale)), transparent);
   white-space: nowrap;
 }
 .ja-event--compact { padding: 5px 12px; gap: 8px; }
@@ -426,7 +426,7 @@
   top: 0;
   bottom: 0;
   background: linear-gradient(90deg, var(--violet), var(--purple) 55%, var(--cyan));
-  box-shadow: 0 0 14px rgba(34, 230, 224, .5);
+  box-shadow: 0 0 calc(14px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(50% * var(--glow-scale)), transparent);
   /* fill animates 600ms ease-out on change */
   transition: width 600ms var(--ease);
   animation: ja-fill calc(4.5s * var(--motion)) ease-in-out infinite;
@@ -445,7 +445,7 @@
 .ja-goal__segments { display: flex; gap: 4px; height: 12px; }
 .ja-goal__segment  { flex: 1; background: rgba(255, 255, 255, .08); border-radius: 2px; transition: background 600ms var(--ease); }
 .ja-goal__segment.is-filled { background: var(--purple); }
-.ja-goal__segment.is-filled:first-child { box-shadow: 0 0 10px rgba(185, 92, 240, .5); }
+.ja-goal__segment.is-filled:first-child { box-shadow: 0 0 calc(10px * var(--glow-scale)) color-mix(in srgb, var(--purple) calc(50% * var(--glow-scale)), transparent); }
 
 /* mug — the one place literal coffee shows up */
 .ja-goal__mug {
@@ -542,7 +542,7 @@
   background: linear-gradient(90deg, rgba(34, 230, 224, .2), rgba(14, 14, 20, .86) 55%);
   border-color: rgba(34, 230, 224, .5);
   border-left-color: var(--cyan);
-  box-shadow: 0 0 44px rgba(34, 230, 224, .24);
+  box-shadow: 0 0 calc(44px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(24% * var(--glow-scale)), transparent);
 }
 .ja-alert--sub .ja-alert__kicker { color: var(--cyan); }
 .ja-alert--sub .ja-alert__icon {
@@ -557,7 +557,7 @@
   background: linear-gradient(90deg, rgba(240, 168, 85, .2), rgba(14, 14, 20, .86) 55%);
   border-color: rgba(240, 168, 85, .45);
   border-left-color: var(--amber);
-  box-shadow: 0 0 44px rgba(240, 168, 85, .2);
+  box-shadow: 0 0 calc(44px * var(--glow-scale)) color-mix(in srgb, var(--amber) calc(20% * var(--glow-scale)), transparent);
 }
 .ja-alert--tip .ja-alert__kicker { color: var(--amber); }
 .ja-alert--tip .ja-alert__icon {
@@ -570,7 +570,7 @@
   background: linear-gradient(90deg, rgba(226, 86, 200, .2), rgba(14, 14, 20, .86) 55%);
   border-color: rgba(226, 86, 200, .45);
   border-left-color: var(--magenta);
-  box-shadow: 0 0 44px rgba(226, 86, 200, .2);
+  box-shadow: 0 0 calc(44px * var(--glow-scale)) color-mix(in srgb, var(--magenta) calc(20% * var(--glow-scale)), transparent);
 }
 .ja-alert--bits .ja-alert__kicker { color: var(--magenta); }
 .ja-alert--bits .ja-alert__icon {
@@ -599,7 +599,7 @@
   border: var(--hairline-w) dashed rgba(34, 230, 224, .4);
   border-radius: 8px 40px 8px 40px;
   background: repeating-linear-gradient(135deg, rgba(139, 77, 255, .1) 0 12px, rgba(10, 10, 15, .35) 12px 24px);
-  box-shadow: 0 0 70px rgba(139, 77, 255, .2);
+  box-shadow: 0 0 calc(70px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(20% * var(--glow-scale)), transparent);
   /* `contain`, not `cover`: for artwork drawn to the slot's 520x620 the two
      are identical, but a square logo — which is what most people drop in
      here — would lose ~16% off each side under `cover`. Nothing gets
@@ -621,7 +621,7 @@
   height: 26px;
   border-radius: 50%;
   background: var(--cyan);
-  box-shadow: 0 0 34px 10px rgba(34, 230, 224, .55);
+  box-shadow: 0 0 calc(34px * var(--glow-scale)) calc(10px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(55% * var(--glow-scale)), transparent);
   animation: ja-eye calc(6s * var(--motion)) linear infinite;
 }
 .ja-mascot__caption {
@@ -699,7 +699,7 @@
   line-height: .94;
   letter-spacing: -.01em;
   color: var(--text-1);
-  text-shadow: 0 0 44px rgba(139, 77, 255, .45);
+  text-shadow: 0 0 calc(44px * var(--glow-scale)) color-mix(in srgb, var(--violet) calc(45% * var(--glow-scale)), transparent);
 }
 .ja-gradient-text {
   background: linear-gradient(96deg, var(--purple) 0%, var(--violet) 38%, var(--cyan) 100%);
@@ -734,7 +734,7 @@
   background: rgba(14, 14, 20, .8);
   border: var(--hairline-w) solid rgba(34, 230, 224, .34);
   border-radius: 2px 18px 2px 18px;
-  box-shadow: 0 0 30px rgba(34, 230, 224, .14);
+  box-shadow: 0 0 calc(30px * var(--glow-scale)) color-mix(in srgb, var(--cyan) calc(14% * var(--glow-scale)), transparent);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 56px;
@@ -833,7 +833,7 @@
 .ja-goal__rail { height: var(--goal-thickness, 6px); border-radius: var(--goal-radius, 3px); }
 .ja-goal__fill {
   background: linear-gradient(90deg, var(--goal-primary, var(--violet)), var(--goal-secondary, var(--cyan)));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--goal-secondary, var(--cyan)) 50%, transparent);
+  box-shadow: 0 0 calc(14px * var(--glow-scale)) color-mix(in srgb, var(--goal-secondary, var(--cyan)) calc(50% * var(--glow-scale)), transparent);
 }
 .ja-goal__label { color: var(--goal-text, var(--text-2)); }
 .ja-goal__value { color: var(--goal-secondary, var(--cyan)); }
