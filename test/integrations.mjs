@@ -144,7 +144,7 @@ await waitForServer();
   check('approving the code links the account', Boolean(linked));
 
   const twitch = await source('twitch');
-  check('the linked account is named', twitch.account === 'JON_AI', twitch.account);
+  check('the linked account is named', twitch.account === 'CatSockStudio', twitch.account);
   check('every event type is subscribed', mock.state.subscriptions.length === 9, `${mock.state.subscriptions.length} subscriptions`);
   check('chat is subscribed over the same socket',
     mock.state.subscriptions.includes('channel.chat.message'));

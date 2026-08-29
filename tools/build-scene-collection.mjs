@@ -166,7 +166,7 @@ const collection = {
   current_scene: scStarting.name,
   current_program_scene: scStarting.name,
   scene_order: scenes.map((s) => ({ name: s.name })),
-  name: 'JON_AI_CTRL',
+  name: 'Nightwire',
   sources: [
     srcStarting, srcGameplay, srcChatting, srcBrb, srcEnding, srcOffline,
     camGameplay, camChatting, game,
@@ -186,7 +186,7 @@ const collection = {
   resolution: { x: 1920, y: 1080 },
 };
 
-const out = process.argv[2] ?? 'obs/JON_AI_CTRL.json';
+const out = process.argv[2] ?? 'obs/Nightwire.json';
 writeFileSync(out, JSON.stringify(collection, null, 4));
 console.log(`wrote ${out}`);
 console.log(`  scenes:  ${scenes.length}`);

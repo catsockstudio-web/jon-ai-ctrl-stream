@@ -399,14 +399,23 @@ async function scene(path = '/scenes/gameplay.html') {
   /* And the shipped layout must still be the one the sheet authored. */
   await fetch(`${BASE}/api/reset`, { method: 'POST' });
   await page.waitForTimeout(700);
-  const authored = {
-    '.ja-brand-bar': [32, 32], '.ja-system-strip': [1357, 32], '.ja-chat': [1528, 120],
-    '.ja-tile': [472, 930], '.ja-goal': [32, 1024], '.ja-webcam': [32, 775],
-  };
+  /* Assert the anchor, not the left edge. A right-anchored widget's x depends
+     on how wide its text happens to be, so pinning x would break every time
+     the demo copy changed — which it did, and the layout was fine. */
+  const authored = [
+    ['.ja-brand-bar',    'left',  32,   32],
+    ['.ja-system-strip', 'right', 1888, 32],
+    ['.ja-chat',         'right', 1888, 120],
+    ['.ja-tile',         'left',  472,  930],
+    ['.ja-goal',         'left',  32,   1024],
+    ['.ja-webcam',       'left',  32,   775],
+  ];
   const off = [];
-  for (const [sel, [x, y]] of Object.entries(authored)) {
+  for (const [sel, edge, at, y] of authored) {
     const r = await box(sel);
-    if (!r || r.x !== x || r.y !== y) off.push(`${sel} want ${x},${y} got ${r ? `${r.x},${r.y}` : 'absent'}`);
+    if (!r) { off.push(`${sel} absent`); continue; }
+    const got = edge === 'right' ? r.x + r.w : r.x;
+    if (Math.abs(got - at) > 1 || r.y !== y) off.push(`${sel} want ${edge} ${at}, y ${y} — got ${got}, ${r.y}`);
   }
   check('the default layout is still the authored one', off.length === 0, off.join(' | '));
   await page.close();

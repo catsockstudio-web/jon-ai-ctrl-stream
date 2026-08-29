@@ -4,14 +4,14 @@ REM No admin rights needed - this only writes a shortcut into your own
 REM Startup folder. Run uninstall-autostart.bat to undo it.
 setlocal
 set "REPO=%~dp0"
-set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\JON_AI_CTRL Server.lnk"
+set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Nightwire Server.lnk"
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%');" ^
   "$s.TargetPath = 'wscript.exe';" ^
   "$s.Arguments = '""%REPO%start-hidden.vbs""';" ^
   "$s.WorkingDirectory = '%REPO%';" ^
-  "$s.Description = 'JON_AI_CTRL overlay server';" ^
+  "$s.Description = 'Nightwire overlay server';" ^
   "$s.Save()"
 
 if errorlevel 1 (

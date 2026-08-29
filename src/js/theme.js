@@ -39,7 +39,7 @@ const rgba = (rgb, alpha) =>
    set by hand, so every value stays editable afterwards. */
 
 export const THEME_PRESETS = {
-  default:      { label: 'JON_AI_CTRL Default', colors: { primary: '#8B4DFF', secondary: '#22E6E0', highlight: '#F0A855', background: '#0A0A0F', text: '#EAEAF2', textDim: '#8E8FA6' } },
+  default:      { label: 'Nightwire Default', colors: { primary: '#8B4DFF', secondary: '#22E6E0', highlight: '#F0A855', background: '#0A0A0F', text: '#EAEAF2', textDim: '#8E8FA6' } },
   cyan:         { label: 'Cyan',          colors: { primary: '#1FA8C7', secondary: '#5BF0E0', highlight: '#F0A855', background: '#06121A', text: '#EAF6FA', textDim: '#7E97A6' } },
   purple:       { label: 'Purple',        colors: { primary: '#A855F7', secondary: '#E879F9', highlight: '#FBBF24', background: '#0C0716', text: '#F2EAFA', textDim: '#9B8FA6' } },
   green:        { label: 'Green',         colors: { primary: '#22C55E', secondary: '#A3E635', highlight: '#F0A855', background: '#07130C', text: '#EAFAEE', textDim: '#84A68F' } },

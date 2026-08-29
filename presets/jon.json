@@ -1,0 +1,36 @@
+{
+  "_comment": "Jon's delivered build. Same product, his wording pre-filled.",
+  "channel": {
+    "wordmark": "JON_AI_CTRL",
+    "showName": "MORNING GRIND",
+    "tagline": "The Morning Grind",
+    "handle": "@jon_ai_ctrl",
+    "twitch": "TWITCH / JON_AI_CTRL",
+    "location": "STREAMING FROM TEXAS",
+    "schedule": "MON–FRI · 6:30AM CT",
+    "blurb": "Casual morning gaming, interactive chat, and far too much coffee. Streaming live from Texas.",
+    "node": "TX-01",
+    "commands": ["!DISCORD", "!SETUP"],
+    "camLabel": "CAM_01"
+  },
+  "stream": {
+    "topic": "Coffee, side projects, and what I broke this week",
+    "game": "Helldivers 2"
+  },
+  "chat": {
+    "demoMessages": [
+      { "author": "brewbot_9",    "color": "purple",  "text": "mug count check",          "at": "09:14" },
+      { "author": "kayla_tx",     "color": "cyan",    "text": "that route was clean",     "at": "09:15" },
+      { "author": "n0de_runner",  "color": "blue",    "text": "morning grind ☕", "emotes": 1, "at": "09:16", "badge": "SUB" },
+      { "author": "dallas_dev",   "color": "magenta", "text": "what keyboard is that",    "at": "09:17" },
+      { "author": "sam",          "color": "amber",   "text": "welcome in, first-timers", "at": "09:18", "badge": "MOD" },
+      { "author": "tinygoose",    "color": "purple",  "text": "chat looks sharp today" },
+      { "author": "ctrl_alt_jen", "color": "cyan",    "text": "second cup incoming" }
+    ]
+  },
+  "activity": {
+    "follower": { "kicker": "FOLLOWER",          "value": "kayla_tx",        "accent": "violet" },
+    "sub":      { "kicker": "SUB · 3 MO",        "value": "n0de_runner",     "accent": "cyan"   },
+    "tip":      { "kicker": "TIP · COFFEE FUND", "value": "dallas_dev · $5", "accent": "amber"  }
+  }
+}

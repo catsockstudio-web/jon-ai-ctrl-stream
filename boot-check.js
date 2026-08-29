@@ -31,7 +31,7 @@
       'box-shadow:0 0 44px rgba(240,168,85,.25)',
     ].join(';');
     el.innerHTML =
-      '<div style="font-size:13px;letter-spacing:.3em;color:#F0A855">JON_AI_CTRL // OVERLAY DID NOT START</div>' +
+      '<div style="font-size:13px;letter-spacing:.3em;color:#F0A855">NIGHTWIRE // OVERLAY DID NOT START</div>' +
       '<div style="font-size:26px;margin:12px 0 10px;font-weight:700">' + title + '</div>' +
       '<div style="font-size:16px;color:#8E8FA6;line-height:1.5">' + detail + '</div>' +
       (hint ? '<div style="font-size:15px;margin-top:14px;color:#22E6E0">' + hint + '</div>' : '');

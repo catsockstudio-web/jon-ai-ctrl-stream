@@ -1,12 +1,12 @@
 @echo off
-title JON_AI_CTRL Stream Package - Setup
+title Nightwire Stream Overlay - Setup
 setlocal enabledelayedexpansion
 set "PKG=%~dp0"
 if "%PKG:~-1%"=="\" set "PKG=%PKG:~0,-1%"
 
 echo.
 echo   ============================================
-echo     JON_AI_CTRL  -  Stream Package Setup
+echo     Nightwire  -  Stream Overlay Setup
 echo   ============================================
 echo.
 echo   This will:
@@ -49,13 +49,13 @@ for /f "tokens=*" %%v in ('node -v') do echo         Node.js %%v found.
 REM ---------------------------------------------------------- 2. auto-start
 echo.
 echo   [2/3] Setting the overlay server to run at sign-in...
-set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\JON_AI_CTRL Server.lnk"
+set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Nightwire Server.lnk"
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%');" ^
   "$s.TargetPath = 'wscript.exe';" ^
   "$s.Arguments = '\"%PKG%\start-hidden.vbs\"';" ^
   "$s.WorkingDirectory = '%PKG%';" ^
-  "$s.Description = 'JON_AI_CTRL overlay server';" ^
+  "$s.Description = 'Nightwire overlay server';" ^
   "$s.Save()"
 
 echo         Starting it now...
@@ -77,8 +77,8 @@ if not exist "%OBSDIR%" (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$src = '%PKG%\obs\JON_AI_CTRL.json';" ^
-  "$dst = '%OBSDIR%\JON_AI_CTRL.json';" ^
+  "$src = '%PKG%\obs\Nightwire.json';" ^
+  "$dst = '%OBSDIR%\Nightwire.json';" ^
   "$esc = '%PKG%'.Replace('\','\\');" ^
   "$json = [IO.File]::ReadAllText($src).Replace('__PACKAGE_DIR__', $esc);" ^
   "[IO.File]::WriteAllText($dst, $json);" ^
@@ -91,14 +91,14 @@ echo     Done.
 echo   ============================================
 echo.
 echo   Next, in OBS:
-echo     Scene Collection  ^>  JON_AI_CTRL
+echo     Scene Collection  ^>  Nightwire
 echo.
 echo   Then pick your camera:
 echo     double-click "Camera - Gameplay" and choose your webcam.
 echo     Everything else is already positioned.
 echo.
 echo   The full manual, with screenshots, is in this folder:
-echo     "JON_AI_CTRL - Setup and Operating Manual.pdf"
+echo     "Nightwire - Setup and Operating Manual.pdf"
 echo.
 echo   Opening the quick instructions and the control panel...
 start "" "%PKG%\START HERE.html"

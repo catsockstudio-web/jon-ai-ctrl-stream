@@ -1,10 +1,10 @@
-# JON_AI_CTRL — Stream Package
+# Nightwire — Stream Overlay System
 
-Modular OBS overlay system for **The Morning Grind**. Six scenes, seven
+Modular OBS overlay system. Six scenes, seven
 independently placeable modules, and a local control page that drives all of
 them live.
 
-Built from the Claude Design handoff `JON_AI_CTRL Stream Package.dc.html`
+By Cat Sock Studio. Built from a Claude Design handoff
 (§09 Implementation Handoff is the authority for every measurement, token and
 motion rule in here).
 
@@ -19,7 +19,7 @@ motion rule in here).
 
 ```bash
 node tools/build-scene-collection.mjs      # regenerate if openings moved
-node tools/build-client-package.mjs        # -> dist/JON_AI_CTRL Stream Package.zip
+node tools/build-client-package.mjs        # -> dist/Nightwire Stream Overlay.zip
 ```
 
 That ZIP (~73 KB) is the whole client deliverable. They extract it and

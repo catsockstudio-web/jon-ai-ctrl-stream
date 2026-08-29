@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JON_AI_CTRL — Dashboard</title>
+<title>Nightwire — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,8 +18,9 @@
 
   <header class="dash-top">
     <div style="display:flex;align-items:center;gap:18px;min-width:0">
-      <div class="dash-top__brand">JON_AI_CTRL</div>
-      <div style="font-size:13px;color:var(--text-2)">Stream control &amp; customiser</div>
+      <!-- Filled from src/brand.js so the product name lives in one place. -->
+      <div class="dash-top__brand" id="brand-name">NIGHTWIRE</div>
+      <div style="font-size:13px;color:var(--text-2)" id="brand-line">Stream Overlay System · Cat Sock Studio</div>
     </div>
     <div class="dash-top__status">
       <span class="dash-top__pill"><span class="ja-dot" id="live-dot"></span><span id="live-label">OFFLINE</span></span>

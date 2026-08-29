@@ -1,5 +1,5 @@
 /* ============================================================
-   JON_AI_CTRL — defaults.
+   Nightwire — defaults.
    ------------------------------------------------------------
    This file holds the STARTING values only. Everything here can
    be changed live from the control page, and those changes are
@@ -35,16 +35,21 @@ export const config = {
     clientId: '',
   },
 
+  /* Demo copy. This is what a fresh install shows before anyone has typed
+     anything, so it is Cat Sock Studio's own channel rather than lorem ipsum:
+     a buyer sees a finished overlay on first run instead of placeholders, and
+     every screenshot taken of it is marketing. All of it is replaced from the
+     dashboard — nothing here is baked into the design. */
   channel: {
-    wordmark:    'JON_AI_CTRL',
-    showName:    'MORNING GRIND',
-    tagline:     'The Morning Grind',
-    handle:      '@jon_ai_ctrl',
-    twitch:      'TWITCH / JON_AI_CTRL',
-    location:    'STREAMING FROM TEXAS',
-    schedule:    'MON–FRI · 6:30AM CT',
-    blurb:       'Casual morning gaming, interactive chat, and far too much coffee. Streaming live from Texas.',
-    node:        'TX-01',
+    wordmark:    'CATSOCKSTUDIOS',
+    showName:    'NIGHT SHIFT',
+    tagline:     'Cat Sock Studio',
+    handle:      '@catsockstudio',
+    twitch:      'TWITCH / CATSOCKSTUDIO',
+    location:    'STREAMING FROM THE STUDIO',
+    schedule:    'THU–SUN · 8PM CT',
+    blurb:       'Games, builds, and whatever the cat walks across the keyboard next. Live from Cat Sock Studio.',
+    node:        'CSS-01',
     commands:    ['!DISCORD', '!SETUP'],
     camLabel:    'CAM_01',
   },
@@ -54,7 +59,7 @@ export const config = {
        Uptime is derived from this locally in every scene, so the clock
        stays correct with no per-second traffic on the bus. */
     startedAt: null,
-    topic: 'Coffee, side projects, and what I broke this week',
+    topic: 'Builds, bad decisions, and a cat with opinions',
     game:  'Helldivers 2',
     /* Seconds remaining on the Starting Soon countdown; null hides it. */
     countdownSeconds: null,
@@ -80,9 +85,9 @@ export const config = {
 
   /* The three gameplay activity tiles. */
   activity: {
-    follower: { kicker: 'FOLLOWER',          value: 'kayla_tx',      accent: 'violet' },
-    sub:      { kicker: 'SUB · 3 MO',        value: 'n0de_runner',   accent: 'cyan'   },
-    tip:      { kicker: 'TIP · COFFEE FUND', value: 'dallas_dev · $5', accent: 'amber' },
+    follower: { kicker: 'FOLLOWER',          value: 'mothwing',        accent: 'violet' },
+    sub:      { kicker: 'SUB · 3 MO',        value: 'quietstatic',     accent: 'cyan'   },
+    tip:      { kicker: 'TIP · COFFEE FUND', value: 'binaryowl · $5',    accent: 'amber' },
   },
 
   /* Per-module visibility. The control page toggles these live. */
@@ -147,13 +152,13 @@ export const config = {
        Badges switches visibly do something before a real chat is connected.
        A toggle with nothing to act on reads as a broken control. */
     demoMessages: [
-      { author: 'brewbot_9',    color: 'purple',  text: 'mug count check',        at: '09:14' },
-      { author: 'kayla_tx',     color: 'cyan',    text: 'that route was clean',   at: '09:15' },
-      { author: 'n0de_runner',  color: 'blue',    text: 'morning grind ☕', emotes: 1, at: '09:16', badge: 'SUB' },
-      { author: 'dallas_dev',   color: 'magenta', text: 'what keyboard is that',  at: '09:17' },
-      { author: 'sam',          color: 'amber',   text: 'welcome in, first-timers', at: '09:18', badge: 'MOD' },
-      { author: 'tinygoose',    color: 'purple',  text: 'chat looks sharp today' },
-      { author: 'ctrl_alt_jen', color: 'cyan',    text: 'second cup incoming' },
+      { author: 'sockpuppet_77', color: 'purple',  text: 'the cat is on the desk again', at: '20:41' },
+      { author: 'mothwing',      color: 'cyan',    text: 'that clip was clean',            at: '20:42' },
+      { author: 'quietstatic',   color: 'blue',    text: 'overlay looks unreal 🐈', emotes: 1, at: '20:43', badge: 'SUB' },
+      { author: 'derelict_ave',  color: 'magenta', text: 'what keyboard is that',          at: '20:44' },
+      { author: 'nine_lives',    color: 'amber',   text: 'welcome in, first-timers',       at: '20:45', badge: 'MOD' },
+      { author: 'binaryowl',     color: 'purple',  text: 'chat looks sharp tonight' },
+      { author: 'lowlightlena',  color: 'cyan',    text: 'here for the whole shift' },
     ],
   },
 

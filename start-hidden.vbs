@@ -1,4 +1,4 @@
-' Launch the JON_AI_CTRL overlay server with no console window.
+' Launch the Nightwire overlay server with no console window.
 ' Used by the Startup shortcut that install-autostart.bat creates.
 ' Output goes to server.log next to this file, overwritten each start.
 Option Explicit

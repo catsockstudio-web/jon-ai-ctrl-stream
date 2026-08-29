@@ -23,6 +23,7 @@ import { assetUrl } from './assets.js';
 import { cards, card, bindControls, syncControls, readPath, patchFor } from './controls.js';
 import { merge } from './state.js';
 import { helpFor } from './help.js';
+import { brand } from '../brand.js';
 import {
   ALERT_TYPES, EFFECTS, GOAL_TYPES, PERFORMANCE, POSITIONS, POSITIONS_FOR,
   SCALE_RANGE, TEMPLATE_TOKENS, DEMO_EVENT,
@@ -560,6 +561,12 @@ async function checkServerVersion() {
     staleBanner.hidden = !health.stale;
   } catch { /* offline; the SERVER UNREACHABLE pill already says so */ }
 }
+
+/* The header, the tab title and the footer all read the product name from one
+   module, so a rename is that file plus a rebuild rather than a sweep. */
+$('#brand-name').textContent = brand.name;
+$('#brand-line').textContent = `${brand.tagline} · ${brand.studio}`;
+document.title = `${brand.fullName} — Dashboard`;
 
 checkServerVersion();
 /* Cheap, and it catches an update that lands while the page is open. */

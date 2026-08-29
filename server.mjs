@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { defaults, migrate, SCHEMA_VERSION, EVENT_RING, EVENT_META } from './src/js/schema.js';
 import { Integrations } from './src/server/integrations/registry.mjs';
+import { brand, productLine } from './src/brand.js';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 /* Where settings persist. Overridable with --state so a second instance —
@@ -608,7 +609,8 @@ server.listen(PORT, HOST, () => {
   const shown = HOST === '0.0.0.0' ? 'your-machine-ip' : HOST;
   const base = `http://${shown}:${PORT}`;
   console.log(`
-  JON_AI_CTRL stream package  —  serving ${ROOT}
+  ${productLine}  —  by ${brand.studio}
+  serving ${ROOT}
 
   Dashboard      ${base}/dashboard.html
                  (an OBS dock or any browser — Chrome, Edge, another machine

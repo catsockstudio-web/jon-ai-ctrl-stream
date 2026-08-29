@@ -81,7 +81,7 @@ export async function startMockTwitch() {
 
     /* --- helix --- */
     if (url.pathname === '/helix/users') {
-      return json(200, { data: [{ id: '4242', login: 'jon_ai', display_name: 'JON_AI' }] });
+      return json(200, { data: [{ id: '4242', login: 'catsockstudio', display_name: 'CatSockStudio' }] });
     }
     if (url.pathname === '/helix/eventsub/subscriptions' && req.method === 'POST') {
       const sub = JSON.parse(body || '{}');
