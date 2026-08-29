@@ -1,5 +1,9 @@
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 const { chromium } = await import('/opt/node22/lib/node_modules/playwright/index.mjs');
-const DIR = '/tmp/claude-0/-home-user-valdenmoor/e884f9a3-1fa5-5a4a-b798-d6d02948124b/scratchpad/manual';
+/* Resolve against this file, not a fixed path — the manual is rebuilt from
+   the repo, and a hardcoded scratch directory silently renders a stale copy. */
+const DIR = dirname(fileURLToPath(import.meta.url));
 const b = await chromium.launch();
 const p = await b.newPage();
 await p.goto(`file://${DIR}/manual.html`, { waitUntil: 'load' });

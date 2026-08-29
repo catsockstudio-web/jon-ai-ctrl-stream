@@ -124,7 +124,7 @@ see what you are changing.
 | **Chat** | Ground, scale, position, typography, colours, elements, message animation |
 | **Goals** | Per goal: type, values, orientation, alignment, style, colours, elements |
 | **Widgets** | Placement and scale presets, activity list, setup aids |
-| **Integrations** | Where data comes from, performance modes, the danger zone |
+| **Integrations** | Connect Twitch, YouTube or the relay; performance modes; full reset |
 | **OBS Setup** | Every browser-source URL with a copy button, exact sizes, camera placement |
 
 Every page follows the same shape: **basic controls visible, deeper ones behind
@@ -465,16 +465,104 @@ means writing a file in `src/js/providers/` and changing one line in
 keys do not survive. A full reset keeps `branding`: uploaded artwork is the
 user's own and is only removed by the explicit per-slot Clear.
 
-## Adding live Twitch data later
+## Live sources
 
-Scene and widget code reads only from the store; a **provider** is the one place
-that knows where data comes from. Today that is `ManualProvider` (the control
-page). Adding `TwitchProvider`, `StreamElementsProvider` or
-`StreamerBotProvider` means writing one file and changing one line in
-`config.js` — **no scene, module or stylesheet changes**.
+Three, plus manual control, which never goes away.
 
-Twitch authentication and EventSub are deliberately **not** implemented yet.
-See `src/js/providers/README.md` for the contract and a worked plan.
+| Source | What it supplies | Auth |
+| --- | --- | --- |
+| **Twitch** | Follows, subs, resubs, gift subs, cheers, raids, live status, chat | Device code |
+| **YouTube Live** | Live chat, Super Chats, memberships, live status | Device code |
+| **Relay** | Anything that can POST — Streamer.bot, StreamElements, Streamlabs, Kick bridges, a Stream Deck button | A local key |
+| **Manual** | Everything, by hand | None |
+
+Connect them on the dashboard's **Integrations** page. Manual control keeps
+working alongside a live source, so you can still fire an alert by hand.
+
+### Where integrations run, and why
+
+**In the server, not the browser.** Two reasons, both non-negotiable:
+
+1. Access tokens must never reach a page. Scenes are loaded by OBS and by any
+   browser on the machine; a token in page JavaScript is a token in all of them.
+2. The server already owns state and already pushes to every source over SSE.
+   An integration that writes through that path reaches the overlays with no
+   new transport and **no scene changes at all**.
+
+An integration turns whatever a platform sends into the two things the rest of
+the package already understands — `emitAlert()` and `patch()`. Nothing below
+that seam knows what Twitch is, which is why `config.provider` stays `manual`
+even with Twitch connected.
+
+### Two load-bearing choices
+
+**Device Code Flow, not authorization code.** The authorization-code flow wants
+a client secret, and a secret shipped inside a folder the customer holds is not
+a secret. Device flow needs only a public client id: the server asks for a
+short code, you type it on the platform's site, and the server exchanges it for
+tokens. Nothing confidential is distributed.
+
+**EventSub over WebSocket, not webhooks.** Webhook EventSub needs a public
+HTTPS endpoint, which would force a tunnel or a hosted relay and break the
+package's central promise. The WebSocket transport is outbound-only, so a
+localhost-bound server receives live events with no inbound port, no domain and
+no certificate.
+
+### Setting up the client ids
+
+Client ids are public by design — they identify the application, not the user.
+Register once and paste into `config.js`:
+
+- **Twitch** — https://dev.twitch.tv/console/apps, type *Public*, redirect
+  `http://localhost`. Paste the Client ID into `twitch.clientId`.
+- **YouTube** — Google Cloud console, OAuth client of type *TV and Limited
+  Input*. Paste into `youtube.clientId`.
+
+Leave one blank and its Connect button explains what is missing rather than
+failing silently. `JA_TWITCH_CLIENT_ID` and `JA_GOOGLE_CLIENT_ID` override
+both, which is how the test suite points at a mock.
+
+### Credentials
+
+Tokens live in `<state>.credentials.json`, never in `state.json`, never in the
+document broadcast over SSE, and never in the status endpoint. Three
+consequences, all deliberate: **Reset everything cannot sign you out**, no
+token can reach a scene, and deleting that one file signs out of everything.
+
+### Ownership
+
+A linked source declares the state paths it owns, and the dashboard **disables
+those fields**. A follower count someone can type over while Twitch is
+reporting it is a lie, so the control is removed rather than left to be
+silently overwritten.
+
+### The relay
+
+One authenticated local endpoint anything can post to:
+
+```
+POST http://127.0.0.1:8787/api/ingest/<key>
+{ "kind": "tip", "name": "dallas_dev", "amount": "$5.00" }
+```
+
+`kind` is one of `follower · sub · tip · bits · raid · giftSub`, or `chat` with
+`user` and `text`. The key is generated per install and shown on the
+Integrations page; without it any page in any browser could fire alerts on
+stream. **NEW ADDRESS** rotates it.
+
+This is the deliberate answer to the long tail. Writing nine more OAuth clients
+to reach Kick, Trovo, Streamlabs, Ko-fi and a Stream Deck would be nine more
+things to break; all of them can already issue an HTTP POST.
+
+### What is not wired, and why
+
+- **YouTube has no follow event.** Subscriptions are not published live, so the
+  follower alert has no YouTube source. The UI says so rather than wiring it to
+  something it is not.
+- **Discord and Steam are not event sources.** Neither has follows, subs or
+  tips to surface. If you want a Discord "live now" post or a Steam now-playing
+  label, those are outbound features, not integrations — and either can be
+  driven through the relay today.
 
 ---
 
@@ -569,6 +657,7 @@ node test/render.mjs       # every page mounts, no script errors
 node test/alpha.mjs        # camera cutouts, masks, assets actually paint
 node test/dashboard.mjs    # the ten pages, theming, uploads
 node test/customizer.mjs   # customisation reaches live overlays (own server)
+node test/integrations.mjs # Twitch/YouTube/relay against a mock (own server)
 ```
 
 `customizer.mjs` is the one that matters most: every check reads the **scene**,
@@ -580,6 +669,17 @@ effect toggles and gating, alert timing and the queue, chat typography, goal
 orientation, sub-element toggles, position and scale, the recent-events list,
 resets, v1 migration, same-version top-up, restart persistence, and two
 isolated browsers staying in sync.
+
+`integrations.mjs` is the one that could not exist without a stand-in. Twitch
+cannot be tested against Twitch — it needs a real account, a real broadcast and
+a real follower to press the button — so `test/mock-twitch.mjs` reproduces the
+device flow, Helix and the EventSub WebSocket frames by hand (Node has no
+WebSocket server built in, so the handshake and framing are written out). The
+suite then drives the real integration code against it. That is the difference
+between "the code looks right" and "a `channel.cheer` frame becomes a bits
+alert on screen". It covers every event mapping, the gifted-sub double-alert
+trap, reconnection after a dropped socket, surviving a server restart, and six
+checks that no token reaches state, disk, or the status endpoint.
 
 `acceptance.mjs` drives the control page and the overlays in **two separate
 Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,

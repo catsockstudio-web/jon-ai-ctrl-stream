@@ -107,21 +107,22 @@
   <div class="kicker">CONTENTS</div>
   <h2>What is in this manual</h2>
   <table class="toc">
-    <tr><td><b>1 · Setting up</b><br><span class="t-sub">Three steps, about five minutes</span></td><td>p4</td></tr>
-    <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p5</td></tr>
-    <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p7</td></tr>
-    <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p11</td></tr>
-    <tr><td><b>5 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p13</td></tr>
-    <tr><td><b>6 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p15</td></tr>
-    <tr><td><b>7 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p17</td></tr>
-    <tr><td><b>8 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p19</td></tr>
-    <tr><td><b>9 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p20</td></tr>
-    <tr><td><b>10 · Chat and Goals</b></td><td>p22</td></tr>
-    <tr><td><b>11 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p24</td></tr>
-    <tr><td><b>12 · OBS Setup page</b></td><td>p25</td></tr>
-    <tr><td><b>13 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p26</td></tr>
-    <tr><td><b>14 · Going live — checklist</b></td><td>p27</td></tr>
-    <tr><td><b>15 · If something looks wrong</b></td><td>p28</td></tr>
+    <tr><td><b>1 · Setting up</b><br><span class="t-sub">Three steps, about five minutes</span></td><td>p5</td></tr>
+    <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p6</td></tr>
+    <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p8</td></tr>
+    <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p12</td></tr>
+    <tr><td><b>5 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p14</td></tr>
+    <tr><td><b>6 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p16</td></tr>
+    <tr><td><b>7 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p18</td></tr>
+    <tr><td><b>8 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p20</td></tr>
+    <tr><td><b>9 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p21</td></tr>
+    <tr><td><b>10 · Chat and Goals</b></td><td>p23</td></tr>
+    <tr><td><b>11 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p25</td></tr>
+    <tr><td><b>12 · OBS Setup page</b></td><td>p26</td></tr>
+    <tr><td><b>13 · Connecting Twitch or YouTube</b><br><span class="t-sub">Optional — it works by hand without it</span></td><td>p27</td></tr>
+    <tr><td><b>14 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p30</td></tr>
+    <tr><td><b>15 · Going live — checklist</b></td><td>p31</td></tr>
+    <tr><td><b>16 · If something looks wrong</b></td><td>p32</td></tr>
   </table>
 
   <h3>Before you start</h3>
@@ -563,9 +564,81 @@
   the full-scene overlays — for example, chat on its own in a corner of a scene you designed yourself.</p>
 </section>
 
-<!-- ============ 13 RESETS ============ -->
+<!-- ============ 13 CONNECTING ACCOUNTS ============ -->
 <section class="section">
   <div class="kicker">SECTION 13</div>
+  <h2>Connecting Twitch or YouTube</h2>
+  <p class="lede">Optional. Everything works by hand without this — connecting
+  just means you stop typing names in.</p>
+
+  <figure>
+    <img src="img/12-integrations.jpg" alt="Integrations page">
+    <figcaption>The <b>Integrations</b> page. Manual control keeps working alongside
+    anything you connect.</figcaption>
+  </figure>
+
+  <h3>What each one gives you</h3>
+  <table>
+    <tr><th>Source</th><th>Supplies</th></tr>
+    <tr><td><b>Twitch</b></td><td>Follows, subs, resubs, gift subs, cheers, raids, chat, and live status</td></tr>
+    <tr><td><b>YouTube Live</b></td><td>Live chat, Super Chats, memberships, and live status</td></tr>
+    <tr><td><b>Relay</b></td><td>Anything else that can send a message — see below</td></tr>
+    <tr><td><b>Manual</b></td><td>Everything, by hand. Never switched off.</td></tr>
+  </table>
+
+  <h3>Connecting</h3>
+  <ol class="steps">
+    <li><b>Press CONNECT on the source you want.</b></li>
+    <li><b>A short code appears.</b> Open the address shown — for Twitch that is
+      <code>twitch.tv/activate</code> — and type the code in.</li>
+    <li><b>That is it.</b> The page changes to CONNECTED by itself. You do not
+      need to come back and press anything.</li>
+  </ol>
+
+  <figure>
+    <img src="img/13-device-code.jpg" alt="The device code shown while connecting">
+    <figcaption>What you see between pressing Connect and approving it.</figcaption>
+  </figure>
+
+  <div class="note">
+    <b>You are never asked for your password.</b>
+    You type a short code on the platform's own website, and it hands back
+    permission. This package never sees your Twitch or Google password, and the
+    permissions it asks for are read-only — it cannot post, ban, or change
+    anything on your channel.
+  </div>
+
+  <h3>What changes once you are connected</h3>
+  <p>Alerts fire on their own. Chat fills in by itself. The uptime clock starts
+  when you go live and stops when you end, so you no longer press START STREAM.</p>
+  <p>Some fields on <b>Live Control</b> grey out — your follower count, for
+  example. That is deliberate: while Twitch is reporting a number, letting you
+  type over it would be a lie, because the next event would overwrite whatever
+  you typed. Disconnect and they become editable again.</p>
+
+  <div class="note note--warn">
+    <b>YouTube has no follower alert.</b>
+    YouTube does not publish subscriptions live, so there is nothing to listen
+    for. Super Chats, memberships and chat all work. This is a YouTube
+    limitation, not a missing feature.
+  </div>
+
+  <h3>The Relay — everything else</h3>
+  <p>The relay is a local address that any other tool can send events to:
+  Streamer.bot, StreamElements, Streamlabs, a Kick bridge, a Stream Deck button,
+  or a script you wrote. If it can send a web request, it can drive your overlay.</p>
+  <p>The address is on the Integrations page, ready to copy. Anything sent to it
+  appears exactly as if it came from Twitch. <b>NEW ADDRESS</b> changes the key,
+  which stops any tool you set up earlier until you paste the new one in.</p>
+
+  <h3>Signing out</h3>
+  <p><b>DISCONNECT</b> forgets the account. Note that <i>Reset everything</i> does
+  <b>not</b> sign you out — settings and accounts are kept separately on purpose.</p>
+</section>
+
+<!-- ============ 14 RESETS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 14</div>
   <h2>Undoing changes</h2>
   <p class="lede">Three levels, smallest first. You cannot get permanently lost.</p>
 
@@ -590,7 +663,7 @@
 
 <!-- ============ 14 CHECKLIST ============ -->
 <section class="section">
-  <div class="kicker">SECTION 14</div>
+  <div class="kicker">SECTION 15</div>
   <h2>Going live — checklist</h2>
 
   <ol class="steps">
@@ -602,7 +675,8 @@
     <li><b>Update your goal numbers.</b> Live Control, Goals card.</li>
     <li><b>Start your stream in OBS.</b></li>
     <li><b>Press START STREAM on the dashboard.</b> This starts the uptime clock and turns the
-      status dot green.</li>
+      status dot green. <b>Skip this if you have connected Twitch or YouTube</b> — they tell the
+      overlay you are live on their own.</li>
   </ol>
 
   <div class="note note--warn">
@@ -617,7 +691,7 @@
 
 <!-- ============ 15 TROUBLESHOOTING ============ -->
 <section class="section">
-  <div class="kicker">SECTION 15</div>
+  <div class="kicker">SECTION 16</div>
   <h2>If something looks wrong</h2>
 
   <h3>The overlay is blank in OBS</h3>
@@ -647,6 +721,14 @@
   <p>Theme page: set <b>Effect performance</b> to <b>LOW</b> and <b>Motion</b> to <b>Reduced</b>.
   If it persists, your OBS canvas may be running at a higher resolution than your PC can encode
   comfortably — that is an OBS setting, not an overlay one.</p>
+
+  <h3>I connected Twitch but nothing happens</h3>
+  <p>Check the Integrations page says CONNECTED rather than WAITING — if it still
+  says waiting, the code was never entered, so press Connect and try again. If it
+  says PROBLEM, the message underneath names the cause. A source can also be
+  connected but missing one kind of event, which it will say in the same place;
+  that means a permission was not granted, and disconnecting and reconnecting
+  fixes it.</p>
 
   <h3>Starting over</h3>
   <p>Integrations page, <b>Reset everything</b>. Your uploaded artwork survives. If the package itself
