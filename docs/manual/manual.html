@@ -111,18 +111,19 @@
     <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p6</td></tr>
     <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p8</td></tr>
     <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p12</td></tr>
-    <tr><td><b>5 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p14</td></tr>
-    <tr><td><b>6 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p16</td></tr>
-    <tr><td><b>7 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p18</td></tr>
-    <tr><td><b>8 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p20</td></tr>
-    <tr><td><b>9 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p21</td></tr>
-    <tr><td><b>10 · Chat and Goals</b></td><td>p23</td></tr>
-    <tr><td><b>11 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p25</td></tr>
-    <tr><td><b>12 · OBS Setup page</b></td><td>p26</td></tr>
-    <tr><td><b>13 · Connecting Twitch or YouTube</b><br><span class="t-sub">Optional — it works by hand without it</span></td><td>p27</td></tr>
-    <tr><td><b>14 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p30</td></tr>
-    <tr><td><b>15 · Going live — checklist</b></td><td>p31</td></tr>
-    <tr><td><b>16 · If something looks wrong</b></td><td>p32</td></tr>
+    <tr><td><b>5 · Two things that will save you time</b><br><span class="t-sub">The i button, and LIVE vs PREVIEW</span></td><td>p14</td></tr>
+    <tr><td><b>6 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p17</td></tr>
+    <tr><td><b>7 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p19</td></tr>
+    <tr><td><b>8 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p21</td></tr>
+    <tr><td><b>9 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p23</td></tr>
+    <tr><td><b>10 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p24</td></tr>
+    <tr><td><b>11 · Chat and Goals</b></td><td>p26</td></tr>
+    <tr><td><b>12 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p28</td></tr>
+    <tr><td><b>13 · OBS Setup page</b></td><td>p29</td></tr>
+    <tr><td><b>14 · Connecting Twitch or YouTube</b><br><span class="t-sub">Optional — it works by hand without it</span></td><td>p30</td></tr>
+    <tr><td><b>15 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p33</td></tr>
+    <tr><td><b>16 · Going live — checklist</b></td><td>p34</td></tr>
+    <tr><td><b>17 · If something looks wrong</b></td><td>p35</td></tr>
   </table>
 
   <h3>Before you start</h3>
@@ -304,9 +305,59 @@
   </div>
 </section>
 
-<!-- ============ 5 LIVE CONTROL ============ -->
+<!-- ============ 5 FINDING YOUR WAY ============ -->
 <section class="section">
   <div class="kicker">SECTION 5</div>
+  <h2>Two things that will save you time</h2>
+  <p class="lede">Read this before you start changing settings. Both answer the
+  same question: is this control broken, or am I looking in the wrong place?</p>
+
+  <h3>The i button</h3>
+  <p>Every control has a small <b>i</b> beside it. Press it and an explanation
+  appears in the panel under the preview — what the control changes, and, where
+  it matters, what it does <b>not</b>.</p>
+  <p>That second half is the important one. Most settings only show up in
+  certain places. Chat position does nothing on the BRB card, because BRB has no
+  chat. Background brightness does nothing on Gameplay, because Gameplay is
+  transparent. Half the recent-events controls do nothing while Activity is set
+  to TILES. None of that is broken — but you cannot tell by looking, so the
+  <b>i</b> tells you.</p>
+
+  <figure>
+    <img src="img/15-left-panel.jpg" alt="The left panel with the info panel open">
+    <figcaption>The left column: preview, scene buttons, the Live/Preview switch, the
+    demo buttons, and the explanation for whichever control you last pressed
+    <b>i</b> on.</figcaption>
+  </figure>
+
+  <h3>LIVE and PREVIEW</h3>
+  <p>The switch under the scene buttons decides where your changes go.</p>
+  <table>
+    <tr><th>Mode</th><th>What happens when you change something</th></tr>
+    <tr><td><b>LIVE</b></td><td>It reaches OBS immediately. This is the normal setting.</td></tr>
+    <tr><td><b>PREVIEW</b></td><td>It shows in the preview only. OBS keeps showing what it showed before.</td></tr>
+  </table>
+  <p>In PREVIEW, two buttons appear. <b>PUSH TO LIVE</b> sends everything you have
+  changed to OBS in one go and returns you to LIVE. <b>DISCARD</b> throws it away.</p>
+
+  <div class="note">
+    <b>This is how you redecorate mid-stream.</b>
+    Switch to PREVIEW, change as much as you like, check it in the preview, then
+    push when you are happy. Your audience sees one clean change instead of
+    watching you try eleven colours.
+  </div>
+
+  <div class="note">
+    <b>The demo buttons follow the same rule.</b>
+    In PREVIEW, <i>Test Alert</i> plays in the preview only — nobody watching sees
+    a fake follower. In LIVE, it plays on your real overlay, so save it for
+    before you go on.
+  </div>
+</section>
+
+<!-- ============ 6 LIVE CONTROL ============ -->
+<section class="section">
+  <div class="kicker">SECTION 7</div>
   <h2>Live Control</h2>
   <p class="lede">The page you keep open while streaming. Four cards.</p>
 
@@ -354,7 +405,7 @@
 
 <!-- ============ 6 THEME ============ -->
 <section class="section">
-  <div class="kicker">SECTION 6</div>
+  <div class="kicker">SECTION 7</div>
   <h2>Theme</h2>
   <p class="lede">The look of the whole package, in one place.</p>
 
@@ -391,7 +442,7 @@
 
 <!-- ============ 7 BRANDING ============ -->
 <section class="section">
-  <div class="kicker">SECTION 7</div>
+  <div class="kicker">SECTION 8</div>
   <h2>Branding</h2>
   <p class="lede">Your own artwork. Every slot is optional.</p>
 
@@ -425,7 +476,7 @@
 
 <!-- ============ 8 SCENES PAGE ============ -->
 <section class="section">
-  <div class="kicker">SECTION 8</div>
+  <div class="kicker">SECTION 9</div>
   <h2>Scenes</h2>
   <p class="lede">The wording on the full-screen cards.</p>
 
@@ -443,7 +494,7 @@
 
 <!-- ============ 9 ALERTS ============ -->
 <section class="section">
-  <div class="kicker">SECTION 9</div>
+  <div class="kicker">SECTION 10</div>
   <h2>Alerts</h2>
   <p class="lede">Six types, each with its own wording, timing, position and effects.</p>
 
@@ -489,7 +540,7 @@
 
 <!-- ============ 10 CHAT + GOALS ============ -->
 <section class="section">
-  <div class="kicker">SECTION 10</div>
+  <div class="kicker">SECTION 11</div>
   <h2>Chat</h2>
 
   <figure>
@@ -522,7 +573,7 @@
 
 <!-- ============ 11 WIDGETS ============ -->
 <section class="section">
-  <div class="kicker">SECTION 11</div>
+  <div class="kicker">SECTION 12</div>
   <h2>Widgets</h2>
   <p class="lede">Where each piece sits, and how big it is.</p>
 
@@ -550,7 +601,7 @@
 
 <!-- ============ 12 OBS SETUP ============ -->
 <section class="section">
-  <div class="kicker">SECTION 12</div>
+  <div class="kicker">SECTION 13</div>
   <h2>OBS Setup page</h2>
 
   <figure>
@@ -566,7 +617,7 @@
 
 <!-- ============ 13 CONNECTING ACCOUNTS ============ -->
 <section class="section">
-  <div class="kicker">SECTION 13</div>
+  <div class="kicker">SECTION 14</div>
   <h2>Connecting Twitch or YouTube</h2>
   <p class="lede">Optional. Everything works by hand without this — connecting
   just means you stop typing names in.</p>
@@ -638,7 +689,7 @@
 
 <!-- ============ 14 RESETS ============ -->
 <section class="section">
-  <div class="kicker">SECTION 14</div>
+  <div class="kicker">SECTION 15</div>
   <h2>Undoing changes</h2>
   <p class="lede">Three levels, smallest first. You cannot get permanently lost.</p>
 
@@ -663,12 +714,14 @@
 
 <!-- ============ 14 CHECKLIST ============ -->
 <section class="section">
-  <div class="kicker">SECTION 15</div>
+  <div class="kicker">SECTION 16</div>
   <h2>Going live — checklist</h2>
 
   <ol class="steps">
     <li><b>Check the dashboard says SERVER LINKED.</b> Top right. If it says unreachable, run
       <code>Start Server.bat</code>.</li>
+    <li><b>Check the switch says LIVE, not PREVIEW.</b> In PREVIEW your changes are
+      held back from OBS on purpose. Push them, or switch back.</li>
     <li><b>Turn off the setup aids.</b> On the Widgets page, switch off <i>Sample gameplay plate</i>
       and <i>Safe-area guides</i> if you used them for positioning.</li>
     <li><b>Set today's topic and what you are playing.</b> Live Control, top card.</li>
@@ -691,7 +744,7 @@
 
 <!-- ============ 15 TROUBLESHOOTING ============ -->
 <section class="section">
-  <div class="kicker">SECTION 16</div>
+  <div class="kicker">SECTION 17</div>
   <h2>If something looks wrong</h2>
 
   <h3>The overlay is blank in OBS</h3>
@@ -721,6 +774,15 @@
   <p>Theme page: set <b>Effect performance</b> to <b>LOW</b> and <b>Motion</b> to <b>Reduced</b>.
   If it persists, your OBS canvas may be running at a higher resolution than your PC can encode
   comfortably — that is an OBS setting, not an overlay one.</p>
+
+  <h3>A control seems to do nothing</h3>
+  <p>Press the <b>i</b> beside it. Most settings only apply in certain places,
+  and the explanation says where — chat settings do nothing on a card with no
+  chat, background brightness does nothing on the transparent scenes, and the
+  recent-events controls do nothing while Activity is set to TILES.</p>
+  <p>Then check the switch above the demo buttons. If it says <b>PREVIEW</b>,
+  your changes are being held back on purpose and only the preview is showing
+  them. Press <b>PUSH TO LIVE</b>, or switch back to LIVE.</p>
 
   <h3>I connected Twitch but nothing happens</h3>
   <p>Check the Integrations page says CONNECTED rather than WAITING — if it still

@@ -131,6 +131,28 @@ Every page follows the same shape: **basic controls visible, deeper ones behind
 an `ADVANCED` disclosure.** A beginner sees a short page; an advanced user opens
 one section and gets everything.
 
+### Two things worth knowing first
+
+**Every control has an info button.** Press the `i` beside it and an explanation
+appears under the preview — what it changes and, where it matters, what it does
+*not*. That second half answers most of "is this broken?": chat settings do
+nothing on a card with no chat, background brightness does nothing on the
+transparent scenes, and the recent-events controls do nothing while Activity is
+on TILES. Text lives in `src/js/help.js`, keyed by state path with repeated
+groups collapsed to wildcards; a test asserts every control in the UI has an
+entry, so a new control cannot ship unexplained.
+
+**LIVE and PREVIEW.** In LIVE a change reaches OBS immediately. In PREVIEW it is
+held in a draft only the dashboard's own frame is told about, so a scene can be
+laid out mid-stream without an audience watching it happen; **PUSH TO LIVE**
+sends the lot at once, **DISCARD** throws it away.
+
+The draft never touches the server, so what OBS shows is still at all times
+exactly what the server holds. It is not a second transport: the channel is
+`postMessage` between same-origin frames, and a real browser source is
+top-level, so `window.parent === window` and nothing can reach it. A test
+asserts precisely that. A test alert in PREVIEW plays in the frame only.
+
 ### Two levels of customisation
 
 This is the rule the whole customiser is built on:
