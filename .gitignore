@@ -6,3 +6,6 @@ state.json
 dist/
 state.acceptance.json
 state.customizer.json
+# Access tokens. Never committed, never shipped, never in state.json.
+*.credentials.json
+credentials.json

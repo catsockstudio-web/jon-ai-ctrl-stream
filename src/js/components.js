@@ -71,9 +71,16 @@ export function chatMessage(msg, cfg = {}, theme = {}) {
 
   /* Username colour has three honest modes: whatever the provider said,
      the theme's own accents, or one fixed colour. */
-  let author = CHAT_COLOURS[msg.color] ?? 'var(--purple)';
+  /* A live platform sends a hex; the bundled demo palette uses names. Both
+     are honoured, so a real Twitch username keeps the colour its owner chose
+     instead of collapsing to the fallback. */
+  let author = /^#[0-9a-f]{6}$/i.test(msg.color ?? '')
+    ? msg.color
+    : (CHAT_COLOURS[msg.color] ?? 'var(--purple)');
   if (colors.usernameMode === 'single') author = colors.usernameColor ?? author;
   else if (colors.usernameMode === 'theme') author = msg.color === 'cyan' || msg.color === 'blue' ? (theme.secondary ?? author) : (theme.primary ?? author);
+  /* 'theme' mode deliberately overrides a platform hex too — picking it means
+     "make chat match my overlay", not "match it except for real users". */
 
   const emotes = Array.from({ length: msg.emotes ?? 0 }, () => `<span class="ja-chat__emote"></span>`).join('');
   const stamp = el.timestamps && msg.at ? `<span class="ja-chat__time">${escapeHtml(msg.at)}</span>` : '';

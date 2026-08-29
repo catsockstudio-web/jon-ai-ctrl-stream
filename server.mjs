@@ -32,6 +32,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { defaults, migrate, SCHEMA_VERSION, EVENT_RING, EVENT_META } from './src/js/schema.js';
+import { Integrations } from './src/server/integrations/registry.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 /* Where settings persist. Overridable with --state so a second instance —
@@ -64,6 +65,10 @@ async function sourceFingerprint() {
 
 const BOOT_FINGERPRINT = await sourceFingerprint();
 const STARTED_AT = Date.now();
+
+/* Tokens live apart from settings so that "Reset everything" cannot sign you
+   out, and so no credential is ever inside the document broadcast over SSE. */
+const CREDENTIALS_FILE = STATE_FILE.replace(/\.json$/, '') + '.credentials.json';
 
 const args = process.argv.slice(2);
 const stateFlag = args.indexOf('--state');
@@ -222,6 +227,61 @@ setInterval(() => {
   }
 }, 15000).unref();
 
+/* Twitch sends "#FF0000"; the bundled demo messages use palette names like
+   "cyan". Pass a hex straight through and let anything else fall back. */
+function normaliseChatColour(value) {
+  const v = String(value ?? '').trim();
+  if (/^#[0-9a-f]{6}$/i.test(v)) return v;
+  return v || undefined;
+}
+
+/* The component draws one short badge, not a row of platform icons. Pick the
+   one that actually changes how a message should read. */
+const BADGE_RANK = [['broadcaster', 'HOST'], ['moderator', 'MOD'], ['vip', 'VIP'], ['subscriber', 'SUB']];
+function chatBadge(badges) {
+  if (!Array.isArray(badges)) return undefined;
+  for (const [id, label] of BADGE_RANK) if (badges.includes(id)) return label;
+  return undefined;
+}
+
+/* ---------- integrations ----------
+   A live source reaches the overlays through exactly the same three doors
+   the dashboard uses, so nothing downstream can tell the difference between
+   a follower Twitch reported and one typed by hand. */
+const integrations = new Integrations({
+  emitAlert(alert) {
+    broadcast('alert', { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...alert });
+    recordEvent(alert);
+  },
+  patch(patch) {
+    state = merge(state, patch);
+    persist();
+    broadcast('patch', patch);
+  },
+  chat(line) {
+    /* Normalise to the shape the chat component already renders, rather than
+       inventing a second one — an integration that emitted its own field
+       names would render as blank rows with no error anywhere. */
+    const message = {
+      author: String(line.user ?? line.author ?? '').slice(0, 40),
+      text: String(line.text ?? '').slice(0, 300),
+      /* A platform colour is a hex; the demo palette uses names. Both are
+         allowed through and the component decides. */
+      color: normaliseChatColour(line.colour ?? line.color),
+      badge: chatBadge(line.badges),
+      at: new Date().toTimeString().slice(0, 5),
+    };
+    if (!message.text) return;
+    const cap = Math.max(1, Math.min(Number(state.chat?.maxMessages) || 12, 40));
+    const messages = [message, ...(state.chat?.messages ?? [])].slice(0, cap);
+    state = setBranch(state, ['chat', 'messages'], messages);
+    persist();
+    broadcast('patch', { chat: { messages } });
+  },
+  readState: () => state,
+  log: (msg) => console.log(`  ${msg}`),
+}, config, CREDENTIALS_FILE);
+
 /* ---------- helpers ---------- */
 
 function readBody(req) {
@@ -308,6 +368,56 @@ const server = createServer(async (req, res) => {
        as its first event, with no request of its own. */
     send(res, 'state', state);
     req.on('close', () => clients.delete(res));
+    return;
+  }
+
+  /* ---- integrations ---- */
+  if (path === '/api/integrations' && req.method === 'GET') {
+    json(res, 200, integrations.status());
+    return;
+  }
+
+  /* POST /api/integrations/<id>/<connect|disconnect|rotate> */
+  if (path.startsWith('/api/integrations/') && req.method === 'POST') {
+    const [, , , id, action] = path.split('/');
+    const integration = integrations.get(id);
+    if (!integration) { json(res, 404, { error: `unknown source "${id}"` }); return; }
+    try {
+      if (action === 'connect') {
+        const started = await integration.connect();
+        json(res, 200, { ok: true, ...started, status: integration.status });
+        return;
+      }
+      if (action === 'disconnect') {
+        await integration.disconnect();
+        json(res, 200, { ok: true, status: integration.status });
+        return;
+      }
+      if (action === 'rotate' && typeof integration.rotate === 'function') {
+        await integration.rotate();
+        json(res, 200, { ok: true, status: integration.status });
+        return;
+      }
+      json(res, 400, { error: `unknown action "${action}"` });
+    } catch (err) {
+      /* A failure here is nearly always something the operator can fix —
+         a missing client id, a refused code — so say it in words. */
+      integration.state = 'error';
+      integration.detail = err.message;
+      json(res, 400, { error: err.message });
+    }
+    return;
+  }
+
+  /* Anything that can POST can drive the overlay through the relay. */
+  if (path.startsWith('/api/ingest/') && req.method === 'POST') {
+    const key = path.slice('/api/ingest/'.length);
+    const relay = integrations.get('relay');
+    let body = null;
+    try { body = await readBody(req); } catch (err) { json(res, 400, { error: err.message }); return; }
+    const refusal = relay?.accept(key, body);
+    if (refusal) { json(res, 400, { error: refusal }); return; }
+    json(res, 200, { ok: true });
     return;
   }
 
@@ -514,4 +624,14 @@ server.listen(PORT, HOST, () => {
   This server owns overlay state and pushes changes to every connected
   source over SSE. Settings persist to state.json. Ctrl-C to stop.
 `);
+
+  /* Anything linked before the last shutdown comes back on its own. A
+     streamer should not have to reconnect Twitch because they rebooted. */
+  integrations.resume().catch((err) => console.error('  integrations:', err.message));
 });
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    integrations.stopAll().finally(() => process.exit(0));
+  });
+}

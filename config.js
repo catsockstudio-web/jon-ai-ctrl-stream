@@ -11,11 +11,29 @@
    ============================================================ */
 
 export const config = {
-  /* Which data provider supplies live values.
-     'manual' = the control page (no credentials, no accounts).
-     Future: 'twitch' | 'streamelements' | 'streamerbot'. See
-     src/js/providers/README.md — scenes never learn which is active. */
+  /* Which data provider the SCENES use. This stays 'manual' even with Twitch
+     connected: live sources run in the server and push through the same path
+     the dashboard uses, so a scene never learns where a follower came from. */
   provider: 'manual',
+
+  /* ---- live sources ----
+     A client id is public by design — it identifies the application, not the
+     user, and is safe to ship. There is deliberately no client SECRET here:
+     both integrations use Device Code Flow precisely so that nothing
+     confidential has to live inside a folder a customer holds.
+
+     Register once at https://dev.twitch.tv/console/apps (type: Public,
+     OAuth redirect http://localhost) and paste the Client ID below. Leave it
+     blank and the Connect button explains what is missing rather than
+     failing silently. Env vars JA_TWITCH_CLIENT_ID / JA_GOOGLE_CLIENT_ID
+     override these, which is how the test suite points at a mock. */
+  twitch: {
+    clientId: '',
+  },
+  youtube: {
+    /* Google Cloud console, OAuth client of type "TV and Limited Input". */
+    clientId: '',
+  },
 
   channel: {
     wordmark:    'JON_AI_CTRL',

@@ -17,7 +17,7 @@
 
 import config from '../../config.js';
 import { boot } from './providers/index.js';
-import { formatDuration, uptimeMs, caffeinePercent, goalPercent, goalReadout } from './format.js';
+import { formatDuration, uptimeMs, caffeinePercent, goalPercent, goalReadout, escapeHtml as esc } from './format.js';
 import { applyTheme, THEME_PRESETS } from './theme.js';
 import { assetUrl } from './assets.js';
 import { cards, card, bindControls, syncControls, readPath, patchFor } from './controls.js';
@@ -31,7 +31,10 @@ const $ = (sel) => document.querySelector(sel);
 
 /* Which sub-item each multi-item page is showing. Local view state only —
    never committed, because it is not something OBS needs to know. */
-const ui = { alertType: 'follower', goalKey: 'follower' };
+/* `sources`, `owned` and `device` mirror the server's integration status.
+   They are UI state, never persisted — the server is the only authority on
+   what is actually connected. */
+const ui = { alertType: 'follower', goalKey: 'follower', sources: [], owned: [], device: {} };
 
 const SECTIONS = [
   { id: 'live',        label: 'LIVE CONTROL' },
@@ -349,35 +352,73 @@ function widgetsPage(state) {
 }
 
 function integrationsPage(state) {
-  const rows = [
-    ['Manual (dashboard)', 'Everything you set here. No account, no credentials.', true],
-    ['Twitch', 'EventSub for follows/subs/bits, IRC for chat.', false],
-    ['StreamElements', 'Socket API for activity and tips.', false],
-    ['Streamer.bot', 'Local WebSocket; no cloud credentials.', false],
-  ].map(([name, hint, live]) => `
-    <div class="dash-status" style="border-left-color:${live ? 'var(--cyan)' : 'rgba(255,255,255,.2)'}">
-      <div><div class="dash-status__name">${name}</div><div class="dash-status__hint">${hint}</div></div>
-      <span class="dash-tag dash-tag--${live ? 'live' : 'planned'}">${live ? 'ACTIVE' : 'PLANNED'}</span>
-    </div>`).join('');
+  /* Rendered from live server status rather than a hardcoded list, so a
+     source can never be shown as connected when it is not. `ui.sources` is
+     refreshed by pollIntegrations() below. */
+  const sources = (ui.sources ?? []).map((src) => {
+    const tone = { linked: 'var(--cyan)', pending: 'var(--amber)', error: 'var(--magenta)', off: 'rgba(255,255,255,.2)' }[src.state];
+    const tag = { linked: 'CONNECTED', pending: 'WAITING', error: 'PROBLEM', off: 'NOT CONNECTED' }[src.state];
+    const device = ui.device?.[src.id];
+
+    const action = src.state === 'linked' || src.state === 'pending'
+      ? `<button class="ctl-btn ctl-btn--ghost" data-source-action="disconnect" data-source="${src.id}">DISCONNECT</button>`
+      : `<button class="ctl-btn ctl-btn--cyan" data-source-action="connect" data-source="${src.id}">CONNECT</button>`;
+
+    /* The device code is the whole connect flow: the server is already
+       polling, so all the operator has to do is type this on the platform. */
+    const codeBlock = device ? `
+      <div class="dash-device">
+        <div class="dash-device__label">On another device or tab, open</div>
+        <a class="dash-device__url" href="${esc(device.verifyUrl)}" target="_blank" rel="noreferrer">${esc(device.verifyUrl)}</a>
+        <div class="dash-device__label">and enter this code</div>
+        <div class="dash-device__code">${esc(device.userCode)}</div>
+        <div class="dash-device__label">This page will say CONNECTED on its own once you have.</div>
+      </div>` : '';
+
+    const endpoint = src.endpoint ? `
+      <div class="dash-device">
+        <div class="dash-device__label">Point your other tool at this address</div>
+        <div class="dash-device__url" style="user-select:all">${esc(location.origin + src.endpoint)}</div>
+        <div class="dash-device__label">POST JSON, for example
+          <code>{"kind":"tip","name":"someone","amount":"$5.00"}</code></div>
+        <button class="ctl-btn ctl-btn--ghost" data-source-action="rotate" data-source="${src.id}" style="margin-top:10px">NEW ADDRESS</button>
+      </div>` : '';
+
+    return `
+      <div class="ctl-card">
+        <div class="ctl-card__title">${esc(src.label)}</div>
+        <div class="dash-status" style="border-left-color:${tone}">
+          <div>
+            <div class="dash-status__name">${src.account ? esc(src.account) : esc(src.blurb)}</div>
+            <div class="dash-status__hint">${esc(src.detail || (src.account ? src.blurb : ''))}</div>
+          </div>
+          <span class="dash-tag dash-tag--${src.state === 'linked' ? 'live' : 'planned'}">${tag}</span>
+        </div>
+        ${codeBlock}${endpoint}
+        <div class="ctl-btn-row" style="margin-top:12px">${action}</div>
+      </div>`;
+  }).join('');
+
+  const owned = (ui.owned ?? []).length ? `
+    <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">
+      A connected source owns the numbers it reports. Those fields are shown read-only
+      on Live Control rather than letting an edit be overwritten by the next event.</p>` : '';
 
   return `
-    <p class="dash-panel__intro">Where event data comes from. Styling never lives here — a provider supplies values like "follower = Adem", and everything visual stays in Theme, Alerts, Chat and Goals. That separation is what lets a live provider drop in without redoing any of your customisation.</p>
-    <div class="dash-grid">
-      <div class="ctl-card"><div class="ctl-card__title">DATA SOURCES</div>${rows}
-        <p class="dash-panel__intro" style="margin:14px 0 0;font-size:13px">Only the manual provider exists today. Every number on screen is one you set — nothing is silently faked.</p>
-      </div>
-      <div class="ctl-card"><div class="ctl-card__title">PERFORMANCE</div>
-        <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">These overlays run while a game renders and video encodes. The preset caps how expensive an effect stack is allowed to be.</p>
-        ${['low', 'balanced', 'high'].map((k) => `<div class="dash-status"><div><div class="dash-status__name">${k.toUpperCase()}</div><div class="dash-status__hint">${PERFORMANCE[k].label}</div></div></div>`).join('')}
-        <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">Set it under <strong>Theme → Feel</strong>. LOW runs only compositor-cheap effects; CRT and Noise need HIGH.</p>
-      </div>
-      <div class="ctl-card"><div class="ctl-card__title">DANGER ZONE</div>
-        <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">Uploaded artwork is never removed by a settings reset — only the per-slot Clear on the Branding page deletes a file.</p>
-        <div class="ctl-btn-row">
-          <button class="ctl-btn ctl-btn--ghost" data-reset-branch="theme">RESET THEME</button>
-          <button class="ctl-btn ctl-btn--ghost" data-reset-branch="alerts">RESET ALL ALERTS</button>
-          <button class="ctl-btn ctl-btn--amber" id="reset-everything">RESET EVERYTHING</button>
+    <p class="dash-panel__intro">Where event data comes from. Styling never lives here — a source supplies values like “follower = Adem”, and everything visual stays in Theme, Alerts, Chat and Goals. That separation is what lets a live source drop in without redoing any of your customisation.</p>
+    <div class="dash-grid dash-grid--sources">
+      ${sources || '<div class="ctl-card"><div class="ctl-card__title">DATA SOURCES</div><p class="dash-panel__intro" style="margin:0">Loading…</p></div>'}
+      <div class="ctl-card"><div class="ctl-card__title">MANUAL</div>
+        <div class="dash-status" style="border-left-color:var(--cyan)">
+          <div><div class="dash-status__name">Dashboard</div>
+          <div class="dash-status__hint">Everything you set here by hand. Always available, with or without a connected source.</div></div>
+          <span class="dash-tag dash-tag--live">ALWAYS ON</span>
         </div>
+        ${owned}
+      </div>
+      <div class="ctl-card"><div class="ctl-card__title">RESET</div>
+        <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">Puts every setting back to how the package shipped. Your uploaded artwork is kept, and connected accounts stay connected — sign out of those with DISCONNECT above.</p>
+        <button class="ctl-btn ctl-btn--ghost" id="reset-everything">RESET EVERYTHING</button>
       </div>
     </div>`;
 }
@@ -515,6 +556,67 @@ async function checkServerVersion() {
 checkServerVersion();
 /* Cheap, and it catches an update that lands while the page is open. */
 setInterval(checkServerVersion, 60_000);
+
+/* ---------- integrations ----------
+   Status is polled rather than pushed: it changes only when someone presses
+   Connect or a platform drops its socket, and a second SSE channel for that
+   would be more machinery than the problem needs. */
+async function pollIntegrations() {
+  try {
+    const res = await fetch('/api/integrations', { cache: 'no-store' });
+    if (!res.ok) return;
+    const body = await res.json();
+    const before = JSON.stringify([ui.sources, ui.owned]);
+    ui.sources = body.sources ?? [];
+    ui.owned = body.owned ?? [];
+    /* A source that finished linking has no further use for its device code. */
+    for (const src of ui.sources) {
+      if (src.state === 'linked' || src.state === 'off') delete ui.device[src.id];
+    }
+    if (JSON.stringify([ui.sources, ui.owned]) !== before) renderPages(store.state);
+    applyOwnership();
+  } catch { /* the SERVER UNREACHABLE pill already covers this */ }
+}
+
+/* A field a live source owns must not look editable. Disabling it is the
+   honest signal — the alternative is letting someone type a follower count
+   that the next event silently overwrites. */
+function applyOwnership() {
+  const owned = new Set(ui.owned ?? []);
+  for (const el of document.querySelectorAll('[data-path], [data-goal]')) {
+    const path = el.dataset.path
+      ?? (el.dataset.goal ? `goals.items.${el.dataset.goal.replace('.', '.')}` : '');
+    const isOwned = owned.has(path);
+    el.disabled = isOwned;
+    el.title = isOwned
+      ? 'A connected source reports this. Disconnect it on Integrations to set it by hand.'
+      : '';
+  }
+}
+
+document.addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-source-action]');
+  if (!button) return;
+  const id = button.dataset.source;
+  const action = button.dataset.sourceAction;
+  button.disabled = true;
+  try {
+    const res = await fetch(`/api/integrations/${id}/${action}`, { method: 'POST' });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { reportFailure(body.error ?? `Could not ${action} ${id}.`); return; }
+    hideFailure();
+    /* A device flow hands back a code to type. The server is already polling
+       for the approval, so there is nothing else for the operator to do. */
+    if (body.kind === 'device') ui.device[id] = { userCode: body.userCode, verifyUrl: body.verifyUrl };
+    if (action === 'disconnect') delete ui.device[id];
+  } finally {
+    button.disabled = false;
+    await pollIntegrations();
+  }
+});
+
+pollIntegrations();
+setInterval(pollIntegrations, 4000);
 
 bindControls(document.querySelector('.dash-panel'), store, { onReset: reset });
 
