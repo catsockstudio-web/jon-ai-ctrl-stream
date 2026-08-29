@@ -28,7 +28,11 @@ export const config = {
      failing silently. Env vars JA_TWITCH_CLIENT_ID / JA_GOOGLE_CLIENT_ID
      override these, which is how the test suite points at a mock. */
   twitch: {
-    clientId: '',
+    /* Registered as "Nightwire by Cat Sock Studio" (Public client, Broadcaster
+       Suite). Public by design: it identifies the application, not the user,
+       and is meant to ship. There is deliberately no secret — Device Code Flow
+       exists so nothing confidential has to live in a customer's folder. */
+    clientId: 'es9he0c8lj2ldbfe3yrks8inizlfg6',
   },
   youtube: {
     /* Google Cloud console, OAuth client of type "TV and Limited Input". */

@@ -102,3 +102,46 @@ export async function jsonFetch(url, options = {}, timeoutMs = 10000) {
   try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
   return { ok: res.ok, status: res.status, body };
 }
+
+/**
+ * Turn a failed request into something the operator can act on.
+ *
+ * The person reading this is a streamer looking at a dashboard, not a
+ * developer reading a stack trace, and the difference between "your firewall
+ * blocked it", "that scope was refused" and "the service is down" decides
+ * what they do next. "Refused the request (unknown)" tells them none of it.
+ */
+export function describeFailure(service, err, res) {
+  if (err) {
+    const network = /fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|certificate|tunnel|proxy/i.test(err.message);
+    if (/timed out|TimeoutError|aborted/i.test(err.message)) {
+      return `${service} did not respond in time. Check your internet connection and try again.`;
+    }
+    if (network) {
+      return `Could not reach ${service}. Check your internet connection, and any firewall or VPN that might block it.`;
+    }
+    return `${service} could not be reached: ${err.message}`;
+  }
+  const detail = res?.body?.message || res?.body?.error_description || res?.body?.error
+    || (typeof res?.body?.raw === 'string' ? res.body.raw.slice(0, 120) : '');
+
+  /* A refusal can come from the service or from something between you and it —
+     a corporate proxy, a firewall, a DNS filter. Blaming the app registration
+     for a blocked connection sends the reader to the wrong place entirely. */
+  if (/allowlist|egress|proxy|blocked|tunnel|forbidden by policy/i.test(detail)) {
+    return `Something on this network blocked the connection to ${service}: ${detail}`;
+  }
+  if (res?.status === 400 || res?.status === 401) {
+    return `${service} refused the request${detail ? `: ${detail}` : ''} (HTTP ${res.status}). `
+         + 'This usually means the app registration is wrong — check the client id.';
+  }
+  if (res?.status === 403) {
+    return `${service} refused the request${detail ? `: ${detail}` : ''} (HTTP 403). `
+         + 'Either the app lacks permission, or something on this network blocked it.';
+  }
+  if (res?.status >= 500) {
+    return `${service} is having trouble right now (HTTP ${res.status}). Try again shortly.`;
+  }
+  return `${service} refused the request${detail ? `: ${detail}` : ''}`
+       + (res?.status ? ` (HTTP ${res.status})` : '') + '.';
+}

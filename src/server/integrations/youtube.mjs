@@ -18,7 +18,7 @@
        Saying so is better than wiring it to something it is not.
    ============================================================ */
 
-import { Integration, jsonFetch } from './base.mjs';
+import { Integration, jsonFetch, describeFailure } from './base.mjs';
 
 const OAUTH = process.env.JA_GOOGLE_OAUTH_BASE ?? 'https://oauth2.googleapis.com';
 const DEVICE = process.env.JA_GOOGLE_DEVICE_URL ?? 'https://oauth2.googleapis.com/device/code';
@@ -46,12 +46,18 @@ export class YouTubeIntegration extends Integration {
     if (!this.#clientId) {
       throw new Error('No YouTube client id configured. See the manual, "Connecting YouTube".');
     }
-    const { ok, body } = await jsonFetch(DEVICE, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: this.#clientId, scope: SCOPE }),
-    });
-    if (!ok || !body?.device_code) throw new Error('Google refused the device request.');
+    let res;
+    try {
+      res = await jsonFetch(DEVICE, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: this.#clientId, scope: SCOPE }),
+      });
+    } catch (err) {
+      throw new Error(describeFailure('Google', err));
+    }
+    const { ok, body } = res;
+    if (!ok || !body?.device_code) throw new Error(describeFailure('Google', null, res));
 
     this.state = 'pending';
     this.detail = 'Waiting for you to approve it on Google.';

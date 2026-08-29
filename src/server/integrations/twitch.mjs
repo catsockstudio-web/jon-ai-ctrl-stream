@@ -23,7 +23,7 @@
    there is no second connection and no IRC library.
    ============================================================ */
 
-import { Integration, jsonFetch } from './base.mjs';
+import { Integration, jsonFetch, describeFailure } from './base.mjs';
 
 const ID_BASE  = process.env.JA_TWITCH_ID_BASE  ?? 'https://id.twitch.tv';
 const API_BASE = process.env.JA_TWITCH_API_BASE ?? 'https://api.twitch.tv';
@@ -84,14 +84,20 @@ export class TwitchIntegration extends Integration {
     if (!this.#clientId) {
       throw new Error('No Twitch client id configured. See the manual, "Connecting Twitch".');
     }
-    const { ok, body } = await jsonFetch(`${ID_BASE}/oauth2/device`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: this.#clientId, scopes: SCOPES.join(' ') }),
-    });
-    if (!ok || !body?.device_code) {
-      throw new Error(`Twitch refused the device request (${body?.message ?? 'unknown'}).`);
+    let res;
+    try {
+      res = await jsonFetch(`${ID_BASE}/oauth2/device`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: this.#clientId, scopes: SCOPES.join(' ') }),
+      });
+    } catch (err) {
+      /* A thrown fetch is a network problem, not a refusal, and the two need
+         completely different things from whoever is reading the dashboard. */
+      throw new Error(describeFailure('Twitch', err));
     }
+    const { ok, body } = res;
+    if (!ok || !body?.device_code) throw new Error(describeFailure('Twitch', null, res));
 
     this.state = 'pending';
     this.detail = 'Waiting for you to approve it on Twitch.';
