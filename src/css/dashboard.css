@@ -502,3 +502,38 @@ body.dash {
   padding: 4px 9px; border-radius: 999px;
   background: rgba(240, 168, 85, .14); color: var(--amber);
 }
+
+/* ---------- version-skew and action failure banners ----------
+   Deliberately loud and full width. The failure they report — a running
+   server older than the files it serves — makes buttons do nothing at all,
+   and a quiet notice would be read as part of the layout. */
+/* `display:flex` from a class beats the UA stylesheet's [hidden] rule, so the
+   attribute has to be honoured explicitly or the banner shows permanently. */
+.dash-alert[hidden] { display: none; }
+.dash-alert {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  margin: 0;
+  padding: 12px 22px;
+  background: color-mix(in srgb, var(--amber) 16%, var(--panel-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dash-alert strong { color: var(--amber); font-weight: 600; }
+.dash-alert code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .35);
+  color: var(--text-1);
+}
+.dash-alert--soft {
+  background: color-mix(in srgb, var(--magenta) 14%, var(--panel-bg));
+  border-bottom-color: color-mix(in srgb, var(--magenta) 45%, transparent);
+}
+.dash-alert--soft strong { color: var(--magenta); }

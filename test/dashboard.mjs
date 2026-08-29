@@ -156,6 +156,31 @@ check('theme reset restores defaults', st3.theme.colors.primary === '#8B4DFF', s
     `raid=${ev.activity.categories.raid} events=${ev.activity.events.length}`);
 }
 
+/* Version skew: server.mjs lives in memory from startup while pages come off
+   disk on every request, so an update leaves a new dashboard talking to an old
+   server and its buttons 404 silently. That is what made RESET look broken. */
+{
+  const health = await (await fetch(`${BASE}/api/health`)).json();
+  check('server reports its build', typeof health.running === 'string' && health.running.length > 0, health.running);
+  check('a current server is not stale', health.stale === false);
+  check('the stale banner stays hidden on a current server', await page.locator('#stale-banner').isHidden());
+
+  /* The banner must actually be able to show — a class-level display rule
+     silently beat the hidden attribute the first time this was written. */
+  await page.evaluate(() => { document.getElementById('stale-banner').hidden = false; });
+  check('the stale banner can be shown', await page.locator('#stale-banner').isVisible());
+  await page.evaluate(() => { document.getElementById('stale-banner').hidden = true; });
+
+  /* A failed action has to say so rather than looking like a dead button. */
+  await page.evaluate(() => {
+    const el = document.getElementById('action-error');
+    el.innerHTML = '<strong>That did not work.</strong><span>test</span>';
+    el.hidden = false;
+  });
+  check('a failed action reports itself', await page.locator('#action-error').isVisible());
+  await page.evaluate(() => { document.getElementById('action-error').hidden = true; });
+}
+
 // scene editor
 await page.click('[data-nav="scenes"]');
 await page.click('[data-scene="offline"]');

@@ -15,6 +15,8 @@
      POST /api/state    merge a patch, persist, broadcast
      POST /api/alert    broadcast a one-shot alert (never persisted)
      POST /api/reset    back to config.js defaults
+     POST /api/reset/<branch>  one branch back to its default
+     GET  /api/health   which build is running vs what is on disk
 
    SSE + POST rather than WebSockets: EventSource is native to every
    browser, server-side SSE is a few lines of plain http, and the
@@ -24,6 +26,7 @@
    ============================================================ */
 
 import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFile, writeFile, stat, mkdir, readdir, unlink } from 'node:fs/promises';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +41,29 @@ const STATE_FILE = (() => {
   const i = process.argv.indexOf('--state');
   return i !== -1 && process.argv[i + 1] ? resolve(process.argv[i + 1]) : join(ROOT, 'state.json');
 })();
+
+/* ---------- staleness ----------
+   server.mjs is read into memory once, at startup. The pages it serves are
+   read from disk on every request. So after an update the browser gets new
+   client code immediately while this process keeps running the old server —
+   and a page that calls a route this build does not have just gets a 404.
+   That is precisely how the dashboard's RESET buttons came to look broken:
+   new buttons, old server, silent 404.
+
+   Fingerprinting our own sources at startup and again on demand turns that
+   invisible skew into something the dashboard can state plainly. */
+const SOURCE_FILES = ['server.mjs', 'config.js', 'src/js/schema.js'];
+
+async function sourceFingerprint() {
+  const hash = createHash('sha1');
+  for (const file of SOURCE_FILES) {
+    try { hash.update(await readFile(join(ROOT, file))); } catch { hash.update(file); }
+  }
+  return hash.digest('hex').slice(0, 12);
+}
+
+const BOOT_FINGERPRINT = await sourceFingerprint();
+const STARTED_AT = Date.now();
 
 const args = process.argv.slice(2);
 const stateFlag = args.indexOf('--state');
@@ -282,6 +308,20 @@ const server = createServer(async (req, res) => {
        as its first event, with no request of its own. */
     send(res, 'state', state);
     req.on('close', () => clients.delete(res));
+    return;
+  }
+
+  /* What build is actually running, versus what is on disk right now. */
+  if (path === '/api/health' && req.method === 'GET') {
+    const current = await sourceFingerprint();
+    json(res, 200, {
+      ok: true,
+      running: BOOT_FINGERPRINT,
+      onDisk: current,
+      stale: current !== BOOT_FINGERPRINT,
+      startedAt: STARTED_AT,
+      schema: SCHEMA_VERSION,
+    });
     return;
   }
 

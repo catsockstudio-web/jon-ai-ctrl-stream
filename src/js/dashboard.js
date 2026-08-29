@@ -478,11 +478,43 @@ async function reset(kind, target) {
      second copy of them that could drift. */
   for (const branch of String(target).split(/\s+/).filter(Boolean)) {
     const res = await fetch(`/api/reset/${encodeURIComponent(branch)}`, { method: 'POST' }).catch(() => null);
-    /* A branch with no defaults is a wiring mistake, not a user error —
-       say so in the console rather than leaving a button that does nothing. */
-    if (!res?.ok) console.error(`[dashboard] reset failed for "${branch}"`, res?.status ?? 'no response');
+    if (!res?.ok) {
+      /* A button that silently does nothing is the worst outcome. Say what
+         failed, and check whether a stale server is the reason — that is what
+         it was, every time this has happened. */
+      console.error(`[dashboard] reset failed for "${branch}"`, res?.status ?? 'no response');
+      reportFailure(`Reset failed for “${branch}” (${res?.status ?? 'no response'}).`);
+      checkServerVersion();
+      return;
+    }
   }
+  hideFailure();
 }
+
+/* ---------- is the running server older than these files? ---------- */
+const staleBanner = $('#stale-banner');
+const actionError = $('#action-error');
+
+function reportFailure(message) {
+  actionError.innerHTML = `<strong>That did not work.</strong><span>${message}</span>`;
+  actionError.hidden = false;
+}
+function hideFailure() { actionError.hidden = true; }
+
+async function checkServerVersion() {
+  try {
+    const res = await fetch('/api/health', { cache: 'no-store' });
+    /* An older server has no /api/health at all, which is itself the answer. */
+    if (res.status === 404) { staleBanner.hidden = false; return; }
+    if (!res.ok) return;
+    const health = await res.json();
+    staleBanner.hidden = !health.stale;
+  } catch { /* offline; the SERVER UNREACHABLE pill already says so */ }
+}
+
+checkServerVersion();
+/* Cheap, and it catches an update that lands while the page is open. */
+setInterval(checkServerVersion, 60_000);
 
 bindControls(document.querySelector('.dash-panel'), store, { onReset: reset });
 

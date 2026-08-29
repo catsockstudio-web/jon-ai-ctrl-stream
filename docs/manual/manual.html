@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>JON_AI_CTRL — Setup &amp; Operating Manual</title>
+<style>
+  @page { size: Letter; margin: 16mm 15mm 18mm; }
+  @page :first { margin: 0; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 10.2pt; line-height: 1.52; color: #16171c; background: #fff;
+  }
+  h1, h2, h3, .kicker, .cover__mark, code, .num { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+
+  /* ---------- cover ---------- */
+  .cover {
+    height: 279.4mm; padding: 34mm 24mm 22mm; color: #EDEDF2;
+    background: #0A0A0F;
+    background-image:
+      radial-gradient(circle at 76% 16%, rgba(139,77,255,.36) 0%, transparent 46%),
+      radial-gradient(circle at 12% 88%, rgba(34,230,224,.20) 0%, transparent 44%);
+    display: flex; flex-direction: column; page-break-after: always;
+  }
+  .cover__mark { font-size: 9pt; letter-spacing: .42em; color: #22E6E0; margin-bottom: 20mm; }
+  .cover h1 { font-size: 38pt; line-height: 1.04; margin: 0; letter-spacing: -.015em; }
+  .cover h1 .dim { color: #8B4DFF; }
+  .cover__sub { font-size: 13pt; color: #9A9BB0; margin-top: 7mm; max-width: 118mm; line-height: 1.45; font-family: inherit; }
+  .cover__rule { height: 2px; margin: 14mm 0 8mm; background: linear-gradient(90deg, #8B4DFF, #22E6E0 62%, transparent); }
+  .cover__foot { margin-top: auto; font-size: 8.6pt; color: #6E6F85; letter-spacing: .06em; }
+  .cover__foot strong { color: #EDEDF2; font-weight: 600; }
+
+  /* ---------- structure ---------- */
+  h2 {
+    font-size: 15pt; margin: 0 0 5mm; padding-bottom: 2.6mm; letter-spacing: -.01em;
+    border-bottom: 2px solid #8B4DFF;
+  }
+  h3 { font-size: 11pt; margin: 7mm 0 2.4mm; letter-spacing: .01em; }
+  h3:first-child { margin-top: 0; }
+  p { margin: 0 0 3.2mm; }
+  .section { page-break-before: always; }
+  .kicker { font-size: 7.6pt; letter-spacing: .34em; color: #8B4DFF; margin-bottom: 2mm; }
+  .lede { font-size: 10.8pt; color: #43454f; margin-bottom: 6mm; }
+
+  /* ---------- figures ---------- */
+  figure { margin: 4mm 0 6mm; page-break-inside: avoid; }
+  figure img { width: 100%; display: block; border: 1px solid #d6d7e0; border-radius: 3px; }
+  figcaption { font-size: 8.4pt; color: #62646f; margin-top: 1.8mm; line-height: 1.42; }
+  figcaption b { color: #16171c; }
+
+  /* ---------- steps ---------- */
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0 0 5mm; }
+  ol.steps > li { counter-increment: s; position: relative; padding: 0 0 4.5mm 12mm; page-break-inside: avoid; }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: -0.4mm;
+    width: 8mm; height: 8mm; border-radius: 50%; background: #0A0A0F; color: #22E6E0;
+    font-family: "SF Mono", ui-monospace, monospace; font-size: 9pt;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps b { display: block; margin-bottom: .8mm; }
+
+  ul { margin: 0 0 3.5mm; padding-left: 5mm; }
+  li { margin-bottom: 1.4mm; }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 0 0 5mm; font-size: 9.2pt; page-break-inside: avoid; }
+  th { text-align: left; font-size: 7.6pt; letter-spacing: .2em; text-transform: uppercase; color: #62646f;
+       border-bottom: 1.5px solid #16171c; padding: 0 4mm 1.6mm 0; font-family: "SF Mono", ui-monospace, monospace; }
+  td { padding: 2mm 4mm 2mm 0; border-bottom: 1px solid #e4e5ec; vertical-align: top; }
+  td:first-child, th:first-child { padding-left: 0; }
+  tr:last-child td { border-bottom: none; }
+
+  code {
+    font-size: 8.8pt; background: #f0f0f5; padding: .5mm 1.4mm; border-radius: 2px;
+    border: 1px solid #e0e1ea; white-space: nowrap;
+  }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 3px solid #8B4DFF; background: #f7f5ff; padding: 3.2mm 4mm;
+    margin: 0 0 5mm; font-size: 9.4pt; page-break-inside: avoid;
+  }
+  .note--warn { border-left-color: #C77A16; background: #fdf7ec; }
+  .note b { display: block; margin-bottom: 1mm; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8mm; }
+  .toc { font-size: 10pt; }
+  .toc td { padding: 2.2mm 0; border-bottom: 1px dotted #ccced8; }
+  .toc td:last-child { text-align: right; color: #62646f; font-family: "SF Mono", ui-monospace, monospace; font-size: 9pt; }
+  .toc td:first-child b { font-weight: 600; }
+  .toc .t-sub { color: #62646f; font-size: 9pt; }
+</style></head><body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <div class="cover__mark">CAT SOCK STUDIO</div>
+  <h1>JON_AI_CTRL<br><span class="dim">Stream Package</span></h1>
+  <div class="cover__rule"></div>
+  <p class="cover__sub">A complete OBS overlay system — six scenes, live alerts, chat, goals,
+  and a guided customiser. No subscriptions, no cloud account, no image editing.</p>
+  <div class="cover__foot">
+    <strong>Setup &amp; Operating Manual</strong><br>
+    Everything runs on your PC. Nothing is uploaded anywhere.
+  </div>
+</section>
+
+<!-- ============ CONTENTS ============ -->
+<section>
+  <div class="kicker">CONTENTS</div>
+  <h2>What is in this manual</h2>
+  <table class="toc">
+    <tr><td><b>1 · Setting up</b><br><span class="t-sub">Three steps, about five minutes</span></td><td>p4</td></tr>
+    <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p5</td></tr>
+    <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p7</td></tr>
+    <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p11</td></tr>
+    <tr><td><b>5 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p13</td></tr>
+    <tr><td><b>6 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p15</td></tr>
+    <tr><td><b>7 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p17</td></tr>
+    <tr><td><b>8 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p19</td></tr>
+    <tr><td><b>9 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p20</td></tr>
+    <tr><td><b>10 · Chat and Goals</b></td><td>p22</td></tr>
+    <tr><td><b>11 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p24</td></tr>
+    <tr><td><b>12 · OBS Setup page</b></td><td>p25</td></tr>
+    <tr><td><b>13 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p26</td></tr>
+    <tr><td><b>14 · Going live — checklist</b></td><td>p27</td></tr>
+    <tr><td><b>15 · If something looks wrong</b></td><td>p28</td></tr>
+  </table>
+
+  <h3>Before you start</h3>
+  <p>You need <b>OBS Studio</b> and a Windows PC. Everything else is in the folder you were given.
+  The package installs one small helper (Node.js) the first time you run Setup, and nothing else.</p>
+  <div class="note">
+    <b>Nothing leaves your computer.</b>
+    The overlay is served by a small program running on your own PC at an address only your PC can reach.
+    There is no account to make, no monthly fee, and no data sent anywhere.
+  </div>
+</section>
+
+<!-- ============ 1 SETUP ============ -->
+<section class="section">
+  <div class="kicker">SECTION 1</div>
+  <h2>Setting up</h2>
+  <p class="lede">Three steps. You do this once.</p>
+
+  <ol class="steps">
+    <li><b>Unzip the folder somewhere permanent.</b>
+      Your user folder is ideal — for example <code>C:\Users\YourName\JON_AI_CTRL</code>.
+      Do not run it from inside the ZIP, and do not leave it in Downloads where it may be cleaned up.</li>
+    <li><b>Double-click <code>Setup.bat</code>.</b>
+      It checks for Node.js and installs it if needed, starts the overlay server, sets it to start
+      automatically when you sign in, and opens the dashboard in your browser. Say yes to any
+      Windows permission prompt — that is the Node.js installer.</li>
+    <li><b>Leave it alone.</b>
+      From now on the server starts by itself at sign-in. You never need to open a terminal
+      or type a command.</li>
+  </ol>
+
+  <h3>The other buttons in the folder</h3>
+  <table>
+    <tr><th>File</th><th>What it does</th></tr>
+    <tr><td><code>Setup.bat</code></td><td>First-time install. Safe to run again if something breaks.</td></tr>
+    <tr><td><code>Start Server.bat</code></td><td>Starts the overlay and opens the dashboard.</td></tr>
+    <tr><td><code>Stop Server.bat</code></td><td>Stops the overlay. Your settings are kept.</td></tr>
+    <tr><td><code>Server Status.bat</code></td><td>Tells you whether it is running, and on what address.</td></tr>
+  </table>
+
+  <h3>The dashboard address</h3>
+  <p>The dashboard lives at <code>http://127.0.0.1:8787/dashboard.html</code>. Bookmark it.
+  That address only works on this PC — that is deliberate, and it is what keeps your controls private.</p>
+
+  <div class="note">
+    <b>You can open the dashboard in three places.</b>
+    A normal browser window on a second monitor; a dock inside OBS
+    (<i>View → Docks → Custom Browser Docks</i>); or both at once. They all control the same overlay,
+    because the settings live in the server rather than in any one window.
+  </div>
+</section>
+
+<!-- ============ 2 OBS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 2</div>
+  <h2>Adding the overlay to OBS</h2>
+  <p class="lede">The fast way takes about a minute and wires up all six scenes for you.</p>
+
+  <h3>The fast way — import the scene collection</h3>
+  <ol class="steps">
+    <li><b>In OBS, choose <i>Scene Collection → Import</i>.</b></li>
+    <li><b>Pick <code>obs\JON_AI_CTRL.json</code> from the package folder.</b>
+      Every scene, browser source, size and position comes in already set up.</li>
+    <li><b>Switch to the imported collection</b> under <i>Scene Collection</i>.</li>
+    <li><b>Add your camera and game capture.</b> These are the only two things the import cannot
+      create, because only you know which devices they are. Put them <b>below</b> the overlay in the
+      source list — the overlay has a transparent hole cut for the camera.</li>
+  </ol>
+
+  <div class="note note--warn">
+    <b>Order matters.</b>
+    The overlay goes on <b>top</b>; the camera and game capture go <b>underneath</b>. The camera
+    opening is a genuine transparent cutout, so the camera shows through it while the frame and
+    nameplate stay drawn on top. If you put the camera above the overlay, it will cover the frame.
+  </div>
+
+  <h3>The manual way — one browser source per scene</h3>
+  <p>If you would rather build your own scenes, add a <b>Browser</b> source in each one, set it to
+  <b>1920 × 1080</b>, and paste the matching address. The <b>OBS Setup</b> page in the dashboard has
+  a copy button beside every one of these.</p>
+  <table>
+    <tr><th>Scene</th><th>Address</th></tr>
+    <tr><td>Gameplay</td><td><code>http://127.0.0.1:8787/scenes/gameplay.html</code></td></tr>
+    <tr><td>Starting Soon</td><td><code>http://127.0.0.1:8787/scenes/starting-soon.html</code></td></tr>
+    <tr><td>Just Chatting</td><td><code>http://127.0.0.1:8787/scenes/just-chatting.html</code></td></tr>
+    <tr><td>BRB</td><td><code>http://127.0.0.1:8787/scenes/brb.html</code></td></tr>
+    <tr><td>Ending</td><td><code>http://127.0.0.1:8787/scenes/ending.html</code></td></tr>
+    <tr><td>Offline</td><td><code>http://127.0.0.1:8787/scenes/offline.html</code></td></tr>
+  </table>
+
+  <h3>Browser source settings</h3>
+  <ul>
+    <li><b>Width 1920, Height 1080</b> for every scene source.</li>
+    <li>Leave <b>Shutdown source when not visible</b> <b>off</b>, so a scene is ready the moment you cut to it.</li>
+    <li>Leave <b>Refresh browser when scene becomes active</b> <b>off</b> — changes arrive on their own.</li>
+    <li>Do not tick <i>Control audio via OBS</i>. The overlay makes no sound.</li>
+  </ul>
+</section>
+
+<!-- ============ 3 SCENES ============ -->
+<section class="section">
+  <div class="kicker">SECTION 3</div>
+  <h2>The six scenes</h2>
+  <p class="lede">Below, each scene is shown over a stand-in background. Everything grey-blue behind
+  the overlay is transparent in reality — your game or camera shows through it.</p>
+
+  <figure>
+    <img src="img/scene-gameplay.jpg" alt="Gameplay scene">
+    <figcaption><b>Gameplay</b> — your main scene, and the only one with everything on it: brand bar,
+    uptime strip, chat, camera frame, activity tiles and the goal rail. The empty middle is where your
+    game capture goes; the bordered box at bottom-left is the camera cutout.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/scene-just-chatting.jpg" alt="Just Chatting scene">
+    <figcaption><b>Just Chatting</b> — a large camera opening with chat alongside and the goal rail
+    beneath. Alerts appear on this scene and on Gameplay.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/scene-starting-soon.jpg" alt="Starting Soon scene">
+    <figcaption><b>Starting Soon</b> — a full-screen card for before you go live, with an optional
+    countdown. Set the countdown minutes on the Live Control page.</figcaption>
+  </figure>
+</section>
+
+<section class="section">
+  <figure>
+    <img src="img/scene-brb.jpg" alt="BRB scene">
+    <figcaption><b>BRB</b> — for short breaks.</figcaption>
+  </figure>
+  <figure>
+    <img src="img/scene-ending.jpg" alt="Ending scene">
+    <figcaption><b>Ending</b> — for the end of a stream.</figcaption>
+  </figure>
+  <figure>
+    <img src="img/scene-offline.jpg" alt="Offline scene">
+    <figcaption><b>Offline</b> — a static card with your schedule and tagline, for when you are not
+    streaming. All the wording on these four cards is editable on the <b>Scenes</b> page.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 4 DASHBOARD ============ -->
+<section class="section">
+  <div class="kicker">SECTION 4</div>
+  <h2>The dashboard</h2>
+  <p class="lede">One page, two halves. The left half is what you are looking at. The right half is
+  what you are changing. They work independently.</p>
+
+  <figure>
+    <img src="img/01-dashboard.jpg" alt="The dashboard on the Live Control page">
+    <figcaption>The dashboard with <b>Live Control</b> open.</figcaption>
+  </figure>
+
+  <h3>Left — the preview</h3>
+  <p>The numbered buttons under the preview choose <b>which scene you are looking at</b>. This is only
+  a viewer; it does not change what OBS is showing. The chequerboard is transparency — that is where
+  your game and camera show through.</p>
+  <p>The four buttons marked <b>DEMO DATA</b> put fake activity on screen so you can see your settings
+  working: a test alert, a chat message, some progress on a goal.</p>
+
+  <div class="note note--warn">
+    <b>The demo buttons reach your real overlay.</b>
+    They are not sandboxed to the preview — a test alert plays on every open OBS source, including
+    on stream. Use them while setting up, not while live.
+  </div>
+
+  <h3>Right — the pages</h3>
+  <p>The tabs across the top choose <b>what you are editing</b>. Most settings are global: an alert
+  looks the same on every scene, and a colour change applies everywhere. Only the <b>Scenes</b> page
+  is tied to the scene selected on the left.</p>
+  <p>Every page puts the everyday controls first. Anything folded under <b>ADVANCED</b> is optional —
+  you never have to open it.</p>
+
+  <div class="note">
+    <b>Changes are instant and permanent.</b>
+    There is no Save button. Every change reaches OBS the moment you make it, and is remembered
+    after a restart.
+  </div>
+</section>
+
+<!-- ============ 5 LIVE CONTROL ============ -->
+<section class="section">
+  <div class="kicker">SECTION 5</div>
+  <h2>Live Control</h2>
+  <p class="lede">The page you keep open while streaming. Four cards.</p>
+
+  <figure>
+    <img src="img/10-live-controls.jpg" alt="Live Control cards">
+    <figcaption>Session, Caffeine, Goals and Fire an Alert.</figcaption>
+  </figure>
+
+  <h3>Session</h3>
+  <p><b>START STREAM</b> tells the overlay you have gone live. It turns the status dot green, starts
+  the uptime clock, and begins caffeine decay if you use it. It does not start your OBS stream — you
+  still do that in OBS. Once you are live the button reads <b>RESTART STREAM</b>; pressing it sets the
+  clock back to zero. <b>END</b> returns you to offline.</p>
+  <p><b>Today's topic</b> and <b>Now playing</b> appear on the overlay as you type.
+  <b>Countdown</b> sets the timer on the Starting Soon card, in minutes. Leave it blank for no countdown.</p>
+
+  <h3>Caffeine</h3>
+  <p>A running joke that doubles as a stream-length indicator. Set the level and which cup you are on.
+  <b>Auto-decay</b> makes it fall gradually as the stream runs, so you do not have to touch it.</p>
+
+  <h3>Goals</h3>
+  <p>Current and target for followers, subs and the coffee fund. The goal rail across the bottom of
+  the Gameplay scene follows whichever goal you nominate on the Widgets page.</p>
+
+  <h3>Fire an Alert</h3>
+  <p>For when something actually happens and you want to acknowledge it by name. Type the name, and
+  an amount or tier if it applies, then press the matching button. This also updates the activity
+  tile for that type on the Gameplay scene.</p>
+
+  <table>
+    <tr><th>Button</th><th>Also updates</th></tr>
+    <tr><td>FOLLOWER</td><td>The follower tile</td></tr>
+    <tr><td>SUB</td><td>The sub tile</td></tr>
+    <tr><td>DONATION</td><td>The coffee-fund tile</td></tr>
+    <tr><td>BITS</td><td>Nothing — alert only</td></tr>
+  </table>
+
+  <div class="note">
+    <b>Fire an Alert vs Test Alert.</b>
+    <i>Fire an Alert</i> uses the name you typed and updates the tiles. <i>Test Alert</i>, under the
+    preview, uses made-up demo details and changes nothing else — it is for checking how an alert
+    looks while you design it.
+  </div>
+</section>
+
+<!-- ============ 6 THEME ============ -->
+<section class="section">
+  <div class="kicker">SECTION 6</div>
+  <h2>Theme</h2>
+  <p class="lede">The look of the whole package, in one place.</p>
+
+  <figure>
+    <img src="img/02-theme.jpg" alt="Theme page">
+    <figcaption>Presets, colours and feel. Nothing here can break the layout.</figcaption>
+  </figure>
+
+  <h3>Presets</h3>
+  <p>Six one-click looks. A preset sets the colours and leaves everything else alone, so it is a
+  starting point rather than a reset — change any colour afterwards and your change sticks.</p>
+
+  <h3>Colours</h3>
+  <p><b>Primary</b> is the main accent, used for the brand bar, borders and most glows.
+  <b>Secondary</b> is the contrast accent, used for live indicators and goal fills.
+  <b>Highlight</b> is for money — tips and the coffee fund. Background and text colours are under
+  ADVANCED and rarely need changing.</p>
+
+  <h3>Feel</h3>
+  <table>
+    <tr><th>Control</th><th>What it does</th></tr>
+    <tr><td>Glow intensity</td><td>How much everything glows. 0 is flat and clean; 2 is heavy neon.</td></tr>
+    <tr><td>Background brightness</td><td>How dark the full-screen cards are.</td></tr>
+    <tr><td>Motion</td><td><b>Full</b> is everything. <b>Reduced</b> stills most animation. <b>Off</b> stops all of it.</td></tr>
+    <tr><td>Effect performance</td><td>Caps how expensive the alert effects are allowed to be.</td></tr>
+  </table>
+
+  <div class="note">
+    <b>If OBS is working hard,</b> set <b>Effect performance</b> to <b>LOW</b> and <b>Motion</b> to
+    <b>Reduced</b>. That switches off the costly effects while keeping the glow, so it still looks
+    like your overlay rather than a broken one.
+  </div>
+</section>
+
+<!-- ============ 7 BRANDING ============ -->
+<section class="section">
+  <div class="kicker">SECTION 7</div>
+  <h2>Branding</h2>
+  <p class="lede">Your own artwork. Every slot is optional.</p>
+
+  <figure>
+    <img src="img/03-branding.jpg" alt="Branding page">
+    <figcaption>Drop an image on a slot, or click to browse.</figcaption>
+  </figure>
+
+  <p>The package is designed to look finished with <b>no artwork at all</b> — every slot has a built-in
+  placeholder drawn in code. Adding your own is an upgrade, never a requirement.</p>
+
+  <p>Drop a file on a slot or click it to browse. It is copied into the package and remembered.
+  <b>Clear</b> puts the built-in placeholder back.</p>
+
+  <table>
+    <tr><th>Slot</th><th>Where it appears</th><th>Suggested size</th></tr>
+    <tr><td>Avatar</td><td>Brand bar, top-left of Gameplay</td><td>256 × 256</td></tr>
+    <tr><td>Mascot</td><td>Full-screen cards</td><td>600 × 600</td></tr>
+    <tr><td>Wordmark</td><td>Beside the avatar</td><td>Wide, transparent PNG</td></tr>
+    <tr><td>Backgrounds</td><td>Behind the full-screen cards</td><td>1920 × 1080</td></tr>
+  </table>
+
+  <p>PNG, JPEG or WebP, up to 8&nbsp;MB. PNG with transparency is best for logos.</p>
+
+  <div class="note">
+    <b>Your uploads are safe from resets.</b>
+    No reset button removes artwork — not even <i>Reset everything</i>. Only the <b>Clear</b> button on
+    the slot itself deletes a file.
+  </div>
+</section>
+
+<!-- ============ 8 SCENES PAGE ============ -->
+<section class="section">
+  <div class="kicker">SECTION 8</div>
+  <h2>Scenes</h2>
+  <p class="lede">The wording on the full-screen cards.</p>
+
+  <figure>
+    <img src="img/04-scenes.jpg" alt="Scene editor page">
+    <figcaption>Choose a scene on the left, edit its text here.</figcaption>
+  </figure>
+
+  <p>This is the one page tied to the scene selected in the preview. Pick a scene on the left, and the
+  fields here change to that scene's wording — headline, sub-line, schedule, tagline.</p>
+
+  <p>Sizes and positions are part of the design and are not editable. That is deliberate: it is what
+  stops the package from being broken by accident. Long text shrinks to fit rather than overflowing.</p>
+</section>
+
+<!-- ============ 9 ALERTS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 9</div>
+  <h2>Alerts</h2>
+  <p class="lede">Six types, each with its own wording, timing, position and effects.</p>
+
+  <figure>
+    <img src="img/05-alerts.jpg" alt="Alerts page">
+    <figcaption>Pick a type along the top; everything below applies to that type only.</figcaption>
+  </figure>
+
+  <h3>Wording</h3>
+  <p>Alert text uses tags that get filled in when the alert fires:</p>
+  <table>
+    <tr><th>Tag</th><th>Becomes</th></tr>
+    <tr><td><code>{name}</code></td><td>The person's name</td></tr>
+    <tr><td><code>{amount}</code></td><td>The tip amount or bit count</td></tr>
+    <tr><td><code>{message}</code></td><td>Their message, if any</td></tr>
+    <tr><td><code>{tier}</code></td><td>Sub tier</td></tr>
+    <tr><td><code>{count}</code></td><td>Raid viewers, or number of gift subs</td></tr>
+  </table>
+  <p>So a title of <code>COFFEE FUND · {amount}</code> becomes <i>COFFEE FUND · $5.00</i>.
+  A tag you mistype is left on screen as written rather than vanishing, so you can see the error.</p>
+
+  <h3>Timing, size and position</h3>
+  <p><b>Duration</b> is how long the alert stays up. <b>Scale</b> makes it bigger or smaller — the
+  package will not let you scale it off the edge of the screen. <b>Position</b> is a nine-square grid;
+  placement is preset-only, which is what guarantees nothing ends up half off-screen.</p>
+
+  <h3>Elements</h3>
+  <p>Switch off any part you do not want: the icon, the label, the name, the amount, the message, the
+  border, or the whole panel behind it. Turning the panel off gives you floating text with no box.</p>
+
+  <h3>Effect stack</h3>
+  <p>Nine effects you can stack. Each has its own settings.</p>
+  <table>
+    <tr><th>Effect</th><th>Cost</th></tr>
+    <tr><td>Glow / Bloom</td><td>Low — always on, whatever the performance setting</td></tr>
+    <tr><td>Edge Trace, Flicker, Scanlines</td><td>Low</td></tr>
+    <tr><td>RGB Split, Ghosting, VHS Slice</td><td>Medium — needs BALANCED or HIGH</td></tr>
+    <tr><td>CRT Distortion, Noise</td><td>High — needs HIGH</td></tr>
+  </table>
+  <p>If you switch on an effect your performance setting does not allow, the page tells you why it is
+  not running rather than silently ignoring it.</p>
+</section>
+
+<!-- ============ 10 CHAT + GOALS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 10</div>
+  <h2>Chat</h2>
+
+  <figure>
+    <img src="img/06-chat.jpg" alt="Chat page">
+    <figcaption>Typography, colours, and which parts of a message show.</figcaption>
+  </figure>
+
+  <p>Newest messages are at the top; older ones fade out beneath. Set the font, size and weight, how
+  many messages show at once, and whether badges and timestamps appear.</p>
+  <p><b>Ground</b> decides what sits behind the messages — a panel, individual bubbles, or nothing at
+  all for text straight over your game.</p>
+  <p><b>Username colour</b> offers a different colour per person, one accent for everyone, or plain
+  theme text.</p>
+</section>
+
+<section class="section">
+  <div class="kicker">SECTION 10 · CONTINUED</div>
+  <h2>Goals</h2>
+
+  <figure>
+    <img src="img/07-goals.jpg" alt="Goals page">
+    <figcaption>Three goals, each independently styled.</figcaption>
+  </figure>
+
+  <p>Each goal can run <b>across</b> or <b>upright</b>, and can be drawn as a thin rail, as segments,
+  or as the coffee mug. Turn off any part — label, value, target, percentage, icon.</p>
+  <p>Numbers themselves live on <b>Live Control</b>, so you are not digging through the customiser
+  mid-stream to update a follower count.</p>
+</section>
+
+<!-- ============ 11 WIDGETS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 11</div>
+  <h2>Widgets</h2>
+  <p class="lede">Where each piece sits, and how big it is.</p>
+
+  <figure>
+    <img src="img/08-widgets.jpg" alt="Widgets page">
+    <figcaption>On/off, position and scale for every widget.</figcaption>
+  </figure>
+
+  <p>Each widget can be switched off, moved to one of nine preset positions, and scaled within a safe
+  range. There is no free dragging — presets keep safe margins so nothing ends up under a Twitch
+  overlay or off the edge.</p>
+
+  <div class="note">
+    <b>The camera frame cannot be moved or scaled.</b>
+    Its opening is a transparent cutout at an exact position. Moving it would leave your camera
+    out of register behind it, so the control is deliberately not offered.
+  </div>
+
+  <h3>Recent events</h3>
+  <p>Set <b>Activity → Mode</b> to <b>Recent events</b> and the three tiles become a running list of
+  who just followed, subbed, tipped, cheered or raided. Choose how many show and which kinds count.</p>
+  <p>The list covers the current session only — it is never written to disk, so restarting starts it
+  fresh rather than replaying yesterday.</p>
+</section>
+
+<!-- ============ 12 OBS SETUP ============ -->
+<section class="section">
+  <div class="kicker">SECTION 12</div>
+  <h2>OBS Setup page</h2>
+
+  <figure>
+    <img src="img/09-obs.jpg" alt="OBS setup page">
+    <figcaption>Every address, with a copy button, and the size each source needs.</figcaption>
+  </figure>
+
+  <p>Keep this page open while you build scenes by hand. It lists every scene and every individual
+  widget, with the exact width and height to give each browser source.</p>
+  <p>The individual widget addresses are there if you want to build your own layout rather than use
+  the full-scene overlays — for example, chat on its own in a corner of a scene you designed yourself.</p>
+</section>
+
+<!-- ============ 13 RESETS ============ -->
+<section class="section">
+  <div class="kicker">SECTION 13</div>
+  <h2>Undoing changes</h2>
+  <p class="lede">Three levels, smallest first. You cannot get permanently lost.</p>
+
+  <table>
+    <tr><th>Control</th><th>Undoes</th></tr>
+    <tr><td>The small <b>↺</b> beside a setting</td><td>That one setting</td></tr>
+    <tr><td><b>RESET</b> on a card</td><td>Everything on that card</td></tr>
+    <tr><td><b>Reset everything</b> on Integrations</td><td>All settings — but never your uploaded artwork</td></tr>
+  </table>
+
+  <div class="note">
+    <b>Your artwork is never removed by a reset.</b>
+    Only the <b>Clear</b> button on an individual Branding slot deletes a file.
+  </div>
+
+  <h3>If a reset button seems to do nothing</h3>
+  <p>The dashboard will tell you. If the overlay server is running an older version than the files on
+  disk — which happens after an update, because the server keeps running from when you signed in —
+  a yellow banner appears across the top of the dashboard telling you to restart it. Run
+  <code>Stop Server.bat</code>, then <code>Start Server.bat</code>.</p>
+</section>
+
+<!-- ============ 14 CHECKLIST ============ -->
+<section class="section">
+  <div class="kicker">SECTION 14</div>
+  <h2>Going live — checklist</h2>
+
+  <ol class="steps">
+    <li><b>Check the dashboard says SERVER LINKED.</b> Top right. If it says unreachable, run
+      <code>Start Server.bat</code>.</li>
+    <li><b>Turn off the setup aids.</b> On the Widgets page, switch off <i>Sample gameplay plate</i>
+      and <i>Safe-area guides</i> if you used them for positioning.</li>
+    <li><b>Set today's topic and what you are playing.</b> Live Control, top card.</li>
+    <li><b>Update your goal numbers.</b> Live Control, Goals card.</li>
+    <li><b>Start your stream in OBS.</b></li>
+    <li><b>Press START STREAM on the dashboard.</b> This starts the uptime clock and turns the
+      status dot green.</li>
+  </ol>
+
+  <div class="note note--warn">
+    <b>Do not press the DEMO DATA buttons once you are live.</b>
+    Test Alert, Add Chat and + Goal all reach your real overlay, and your viewers will see them.
+  </div>
+
+  <h3>When you finish</h3>
+  <p>Press <b>END</b> on Live Control to go back to offline, and switch OBS to the Offline scene.
+  Leave the server running — it costs nothing and will be ready next time.</p>
+</section>
+
+<!-- ============ 15 TROUBLESHOOTING ============ -->
+<section class="section">
+  <div class="kicker">SECTION 15</div>
+  <h2>If something looks wrong</h2>
+
+  <h3>The overlay is blank in OBS</h3>
+  <p>Right-click the browser source and choose <b>Refresh</b>. If it is still blank, check the server
+  is running with <code>Server Status.bat</code>. A source that fails will normally display the reason
+  on screen rather than going blank, so read what it says.</p>
+
+  <h3>My camera is covered by the overlay</h3>
+  <p>The camera source is above the overlay in the source list. Drag it below. The overlay has a
+  transparent hole cut for it and is meant to sit on top.</p>
+
+  <h3>The dashboard says SERVER UNREACHABLE</h3>
+  <p>Run <code>Start Server.bat</code>. If it says the port is already in use, the server is already
+  running — refresh the dashboard instead.</p>
+
+  <h3>A button does nothing</h3>
+  <p>Look for a yellow banner at the top of the dashboard. It means the running server is older than
+  the files on disk, and it will tell you to restart. Run <code>Stop Server.bat</code> then
+  <code>Start Server.bat</code>.</p>
+
+  <h3>Text is overflowing or the font looks wrong</h3>
+  <p>The package uses three web fonts and falls back to system fonts if it cannot reach the internet.
+  Headlines shrink to fit rather than overflowing, so it will still be readable — it will just look
+  slightly different until you are back online.</p>
+
+  <h3>Alerts are stuttering</h3>
+  <p>Theme page: set <b>Effect performance</b> to <b>LOW</b> and <b>Motion</b> to <b>Reduced</b>.
+  If it persists, your OBS canvas may be running at a higher resolution than your PC can encode
+  comfortably — that is an OBS setting, not an overlay one.</p>
+
+  <h3>Starting over</h3>
+  <p>Integrations page, <b>Reset everything</b>. Your uploaded artwork survives. If the package itself
+  seems damaged, re-run <code>Setup.bat</code>.</p>
+</section>
+
+</body></html>

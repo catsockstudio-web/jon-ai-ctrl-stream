@@ -97,7 +97,10 @@ echo   Then pick your camera:
 echo     double-click "Camera - Gameplay" and choose your webcam.
 echo     Everything else is already positioned.
 echo.
-echo   Opening the instructions and the control panel...
+echo   The full manual, with screenshots, is in this folder:
+echo     "JON_AI_CTRL - Setup and Operating Manual.pdf"
+echo.
+echo   Opening the quick instructions and the control panel...
 start "" "%PKG%\START HERE.html"
 start "" http://127.0.0.1:8787/dashboard.html
 echo.

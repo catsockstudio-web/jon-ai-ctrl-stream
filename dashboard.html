@@ -28,6 +28,17 @@
     </div>
   </header>
 
+  <!-- Shown only when the running server is older than the files on disk.
+       server.mjs is loaded into memory once at startup while pages are read
+       from disk on every request, so an update leaves a new dashboard talking
+       to an old server and buttons quietly 404. -->
+  <div class="dash-alert" id="stale-banner" hidden>
+    <strong>The server is running an older version than these files.</strong>
+    <span>Some buttons will do nothing until it is restarted. Close this page, run
+    <code>Stop Server.bat</code>, then <code>Start Server.bat</code>, and open the dashboard again.</span>
+  </div>
+  <div class="dash-alert dash-alert--soft" id="action-error" hidden></div>
+
   <div class="dash-body">
 
     <!-- ---------------- preview ---------------- -->

@@ -27,7 +27,8 @@ const STAGE = join(OUT, NAME);
 const RUNTIME = ['server.mjs', 'config.js', 'dashboard.html', 'control.html', 'start-hidden.vbs', 'boot-check.js'];
 const DIRS = ['scenes', 'modules', 'src', 'assets', 'obs'];
 /* The client-facing wrappers, copied from client/ into the package root. */
-const CLIENT = ['START HERE.html', 'Setup.bat', 'Start Server.bat', 'Server Status.bat', 'Stop Server.bat'];
+const CLIENT = ['START HERE.html', 'Setup.bat', 'Start Server.bat', 'Server Status.bat', 'Stop Server.bat',
+  'JON_AI_CTRL - Setup and Operating Manual.pdf'];
 
 await rm(OUT, { recursive: true, force: true });
 await mkdir(STAGE, { recursive: true });
@@ -46,12 +47,32 @@ for (const file of CLIENT) await cp(join(ROOT, 'client', file), join(STAGE, file
 await writeFile(join(STAGE, 'READ ME FIRST.txt'),
   [
     'JON_AI_CTRL - Stream Package',
+    '===============================',
     '',
-    'Double-click:   Setup.bat',
+    'INSTALL',
+    '  Double-click:   Setup.bat',
     '',
-    'That is the whole install. It will open full instructions when it finishes.',
+    '  That is the whole install. It installs what it needs, starts the',
+    '  overlay, sets it to run at sign-in, and opens the dashboard.',
     '',
-    'If you want to read them first, open "START HERE.html".',
+    'THE MANUAL',
+    '  "JON_AI_CTRL - Setup and Operating Manual.pdf"',
+    '  28 pages, with screenshots: OBS setup, a tour of every dashboard',
+    '  page, a going-live checklist and troubleshooting.',
+    '',
+    '  "START HERE.html" is the same thing in short, in your browser.',
+    '',
+    'DAY TO DAY',
+    '  Dashboard        http://127.0.0.1:8787/dashboard.html',
+    '  Start Server.bat     start the overlay and open the dashboard',
+    '  Stop Server.bat      stop it (settings are kept)',
+    '  Server Status.bat    is it running?',
+    '',
+    'IN OBS',
+    '  Scene Collection -> Import -> obs\\JON_AI_CTRL.json',
+    '  Then add your camera and game capture BELOW the overlay.',
+    '',
+    'Everything runs on your own PC. Nothing is uploaded anywhere.',
     '',
   ].join('\r\n'));
 

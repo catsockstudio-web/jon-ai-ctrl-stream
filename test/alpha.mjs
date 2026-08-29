@@ -279,21 +279,30 @@ async function open(path) {
     console.log('SKIP  asset override — assets/mascot.png already exists, not overwriting it');
   } else {
     writeFileSync(target, png);
-    const page = await open('/scenes/starting-soon.html');
-    const slot = await page.locator('.ja-mascot').evaluate((n) => {
-      const r = n.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height * 0.6,
-               hasAsset: n.classList.contains('has-asset'),
-               url: getComputedStyle(n).backgroundImage };
-    });
-    check('asset override sets the class', slot.hasAsset);
-    check('asset URL resolves against the document, not the stylesheet',
-      !/\/src\/assets\//.test(slot.url), slot.url.slice(0, 60));
+    /* The file is written into *this checkout*. When BASE points at a server
+       serving a different directory — the extracted client package, say — the
+       server cannot see it, and the checks below would report a product bug
+       that is really just a misdirected fixture. Ask the server first. */
+    const visible = await fetch(`${BASE}/assets/mascot.png`).then((r) => r.ok).catch(() => false);
+    if (!visible) {
+      console.log('SKIP  asset override — the server under test serves a different directory');
+    } else {
+      const page = await open('/scenes/starting-soon.html');
+      const slot = await page.locator('.ja-mascot').evaluate((n) => {
+        const r = n.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height * 0.6,
+                 hasAsset: n.classList.contains('has-asset'),
+                 url: getComputedStyle(n).backgroundImage };
+      });
+      check('asset override sets the class', slot.hasAsset);
+      check('asset URL resolves against the document, not the stylesheet',
+        !/\/src\/assets\//.test(slot.url), slot.url.slice(0, 60));
 
-    const p = await sample(page, slot.x, slot.y);
-    check('the asset actually paints in the slot',
-      p.r > 230 && p.g < 40 && p.b > 230, `rgb(${p.r},${p.g},${p.b})`);
-    await page.close();
+      const p = await sample(page, slot.x, slot.y);
+      check('the asset actually paints in the slot',
+        p.r > 230 && p.g < 40 && p.b > 230, `rgb(${p.r},${p.g},${p.b})`);
+      await page.close();
+    }
     rmSync(target);
   }
 }
