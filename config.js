@@ -143,12 +143,15 @@ export const config = {
     /* Shown when no live chat provider is connected. With the manual
        provider this is the chat you see — it is sample content, and it
        is the only place in the package that ships fake usernames. */
+    /* Timestamps and a badge are included so the Chat page's Timestamps and
+       Badges switches visibly do something before a real chat is connected.
+       A toggle with nothing to act on reads as a broken control. */
     demoMessages: [
-      { author: 'brewbot_9',    color: 'purple',  text: 'mug count check' },
-      { author: 'kayla_tx',     color: 'cyan',    text: 'that route was clean' },
-      { author: 'n0de_runner',  color: 'blue',    text: 'morning grind ☕', emotes: 1 },
-      { author: 'dallas_dev',   color: 'magenta', text: 'what keyboard is that' },
-      { author: 'MOD · sam',    color: 'amber',   text: 'welcome in, first-timers' },
+      { author: 'brewbot_9',    color: 'purple',  text: 'mug count check',        at: '09:14' },
+      { author: 'kayla_tx',     color: 'cyan',    text: 'that route was clean',   at: '09:15' },
+      { author: 'n0de_runner',  color: 'blue',    text: 'morning grind ☕', emotes: 1, at: '09:16', badge: 'SUB' },
+      { author: 'dallas_dev',   color: 'magenta', text: 'what keyboard is that',  at: '09:17' },
+      { author: 'sam',          color: 'amber',   text: 'welcome in, first-timers', at: '09:18', badge: 'MOD' },
       { author: 'tinygoose',    color: 'purple',  text: 'chat looks sharp today' },
       { author: 'ctrl_alt_jen', color: 'cyan',    text: 'second cup incoming' },
     ],

@@ -345,6 +345,109 @@ async function scene(path = '/scenes/gameplay.html') {
 }
 
 /* ============================================================
+   6b. Every widget's position and scale actually moves it
+   ============================================================ */
+{
+  /* This is the check whose absence let nine dead controls ship. The suite
+     tested alert placement, which used placement(), and never tested the
+     other widgets, which hardcoded their position in the scene markup. So
+     every position and scale preset now has to move real pixels. */
+  const page = await scene();
+  const box = (sel) => page.evaluate((s) => {
+    const el = document.querySelector(s);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+  }, sel);
+
+  const cases = [
+    ['chat position',        { chat: { position: 'top-left' } },                          '.ja-chat'],
+    ['chat scale',           { chat: { scale: 1.25 } },                                   '.ja-chat'],
+    ['brand bar position',   { widgets: { brandBar: { position: 'bottom-right' } } },     '.ja-brand-bar'],
+    ['brand bar scale',      { widgets: { brandBar: { scale: 1.2 } } },                   '.ja-brand-bar'],
+    ['system strip position',{ widgets: { systemStrip: { position: 'top-left' } } },      '.ja-system-strip'],
+    ['goal rail position',   { widgets: { goalRail: { position: 'top-center' } } },       '.ja-goal'],
+    ['goal rail scale',      { widgets: { goalRail: { scale: 1.3 } } },                   '.ja-goal'],
+    ['activity position',    { activity: { position: 'top-right' } },                     '.ja-tile'],
+    ['activity scale',       { activity: { scale: 1.25 } },                               '.ja-tile'],
+  ];
+
+  const dead = [];
+  for (const [name, body, sel] of cases) {
+    await fetch(`${BASE}/api/reset`, { method: 'POST' });
+    await page.waitForTimeout(500);
+    const before = await box(sel);
+    await patch(body);
+    await page.waitForTimeout(650);
+    const after = await box(sel);
+    const moved = before && after &&
+      (before.x !== after.x || before.y !== after.y || before.w !== after.w || before.h !== after.h);
+    if (!moved) dead.push(`${name}: ${JSON.stringify(before)}`);
+  }
+  check('every position and scale preset moves its widget', dead.length === 0, dead.join(' | '));
+
+  /* The stretched goal rail must scale without leaving the frame — the one
+     thing preset-only placement exists to guarantee. */
+  await fetch(`${BASE}/api/reset`, { method: 'POST' });
+  await page.waitForTimeout(500);
+  await patch({ widgets: { goalRail: { scale: 1.5 } } });
+  await page.waitForTimeout(650);
+  const rail = await box('.ja-goal');
+  check('scaling the goal rail keeps it inside the frame',
+    rail.x >= 0 && rail.x + rail.w <= 1920, JSON.stringify(rail));
+
+  /* And the shipped layout must still be the one the sheet authored. */
+  await fetch(`${BASE}/api/reset`, { method: 'POST' });
+  await page.waitForTimeout(700);
+  const authored = {
+    '.ja-brand-bar': [32, 32], '.ja-system-strip': [1357, 32], '.ja-chat': [1528, 120],
+    '.ja-tile': [472, 930], '.ja-goal': [32, 1024], '.ja-webcam': [32, 775],
+  };
+  const off = [];
+  for (const [sel, [x, y]] of Object.entries(authored)) {
+    const r = await box(sel);
+    if (!r || r.x !== x || r.y !== y) off.push(`${sel} want ${x},${y} got ${r ? `${r.x},${r.y}` : 'absent'}`);
+  }
+  check('the default layout is still the authored one', off.length === 0, off.join(' | '));
+  await page.close();
+}
+
+/* ============================================================
+   6c. Sub-element toggles on the goal rail
+   ============================================================ */
+{
+  /* goalRail used to pass a pre-built value string, which silently defeated
+     the Current, Target and Percentage switches on the most visible goal. */
+  const page = await scene();
+  await fetch(`${BASE}/api/reset`, { method: 'POST' });
+  await page.waitForTimeout(600);
+  const value = () => page.locator('.ja-goal__value').first().textContent();
+  const label = () => page.locator('.ja-goal__label').first().textContent();
+
+  const full = await value();
+  check('the rail shows current, target and percentage by default',
+    /\d+\s*\/\s*\d+.*%/.test(full), full);
+
+  for (const [name, part, gone] of [
+    ['current', 'current', (t) => !/^\s*214/.test(t)],
+    ['target', 'target', (t) => (t.match(/\d+/g) ?? []).length < 3],
+    ['percentage', 'percentage', (t) => !t.includes('%')],
+  ]) {
+    await patch({ goals: { items: { follower: { elements: { [part]: false } } } } });
+    await page.waitForTimeout(600);
+    const now = await value();
+    check(`the rail honours the ${name} switch`, now !== full && gone(now), `${full} -> ${now}`);
+    await patch({ goals: { items: { follower: { elements: { [part]: true } } } } });
+    await page.waitForTimeout(400);
+  }
+
+  await patch({ goals: { items: { follower: { elements: { label: false } } } } });
+  await page.waitForTimeout(600);
+  check('the rail honours the label switch', (await label()).trim() === '', await label());
+  await page.close();
+}
+
+/* ============================================================
    7. Resets
    ============================================================ */
 {

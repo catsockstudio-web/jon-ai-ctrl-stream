@@ -17,7 +17,7 @@
 /* 03 / JUST CHATTING — camera-led layout, same tokens, different weighting. */
 import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
-import { avatar, chatBox, webcamFrame, infoTile, goalBar, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
+import { avatar, chatBox, webcamFrame, infoTile, goalBar, widgetPlacement, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
 import { fitToHeight } from '../src/js/widgets.js';
 
 startScene(config, {
@@ -49,8 +49,10 @@ startScene(config, {
         ${webcamFrame(state, { width: CAMERA_OPENINGS.justChatting.width, height: CAMERA_OPENINGS.justChatting.height, ticks: 22 })}
       </div>
 
+      ${/* This scene sets chat wider and further in than gameplay does; those
+            offsets belong to this layout, so they apply only at home. */''}
       ${state.chat.enabled ? `
-        <div style="position:absolute;right:56px;top:150px">${chatBox(state, { width: 552, height: 640, meta: '42 ONLINE' })}</div>` : ''}
+        <div style="${widgetPlacement(state.chat, 'chat', 'top-right', { top: 150, right: 56 })}">${chatBox(state, { width: 552, height: 640, meta: '42 ONLINE' })}</div>` : ''}
 
       ${widgets.activity.enabled || widgets.goalRail.enabled ? `
         <div style="position:absolute;right:56px;bottom:128px;width:552px;display:flex;flex-direction:column;gap:14px">

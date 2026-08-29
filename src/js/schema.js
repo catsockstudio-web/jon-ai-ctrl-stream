@@ -268,7 +268,9 @@ export function defaults(config) {
       maxEvents: 3,
       compact: false,
       scale: 1,
-      position: 'bottom-center',
+      /* Anchored from the left because the sheet puts the tiles just clear of
+         the camera opening, not centred. gameplay.html supplies the offset. */
+      position: 'bottom-left',
       elements: { icon: true, label: true, timestamp: false },
       categories: Object.fromEntries(ALERT_TYPES.map((t) => [t, true])),
       /* The three gameplay tiles. A live provider replaces these values; the

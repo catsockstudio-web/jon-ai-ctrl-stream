@@ -226,6 +226,25 @@ export function webcamFrame(state, { width = 400, height = 225, label = null, ti
     </div>`;
 }
 
+/* ---------- widget placement ---------- */
+/**
+ * Where a widget sits, honouring its position preset and scale.
+ *
+ * `home` is the position the sheet authored it at, and `inset` the offsets
+ * that reproduce that authored layout — gameplay's chat sits 120px down, not
+ * at the standard margin. Those offsets apply ONLY at the home position: the
+ * design's own nudges make sense where the design put it, and would look like
+ * a mistake anywhere else, so any other preset takes the plain safe margin.
+ *
+ * Every widget except the webcam frame goes through here. The frame is
+ * deliberately fixed: its opening is a transparent cutout at an authored
+ * position, and moving it would leave the camera behind it out of register.
+ */
+export function widgetPlacement(widget, kind, home, inset = {}) {
+  const position = widget?.position ?? home;
+  return placement({ ...widget, position }, kind, position === home ? { inset } : {});
+}
+
 /* ---------- InfoTile — 250 x 70 ---------- */
 export function infoTile(tile, { width = 250, height = 70 } = {}) {
   if (!tile) return '';
@@ -385,12 +404,11 @@ export function goalRail(state) {
   const key = state.goals?.railGoal ?? 'follower';
   const goal = state.goals?.items?.[key] ?? state.goals?.items?.follower;
   if (!goal) return '';
-  const pct = goalPercent(goal);
-  return goalBar(goal, {
-    state,
-    label: goal.label,
-    valueText: `${goal.current} / ${goal.target} · ${Math.round(pct)}%`,
-  });
+  /* No valueText override: goalBar already builds "412 / 500 · 82%" from the
+     goal's own element toggles, and passing a pre-built string here silently
+     defeated the Current, Target and Percentage switches on the one goal most
+     people look at. */
+  return goalBar(goal, { state });
 }
 
 /* ---------- Alert — 720 x 132, 4 variants ---------- */
