@@ -21,6 +21,8 @@ import { formatDuration, uptimeMs, caffeinePercent, goalPercent, goalReadout, es
 import { applyTheme, THEME_PRESETS } from './theme.js';
 import { assetUrl } from './assets.js';
 import { cards, card, bindControls, syncControls, readPath, patchFor } from './controls.js';
+import { merge } from './state.js';
+import { helpFor } from './help.js';
 import {
   ALERT_TYPES, EFFECTS, GOAL_TYPES, PERFORMANCE, POSITIONS, POSITIONS_FOR,
   SCALE_RANGE, TEMPLATE_TOKENS, DEMO_EVENT,
@@ -34,7 +36,12 @@ const $ = (sel) => document.querySelector(sel);
 /* `sources`, `owned` and `device` mirror the server's integration status.
    They are UI state, never persisted — the server is the only authority on
    what is actually connected. */
-const ui = { alertType: 'follower', goalKey: 'follower', sources: [], owned: [], device: {} };
+const ui = {
+  alertType: 'follower', goalKey: 'follower', sources: [], owned: [], device: {},
+  /* 'live' writes straight through to the server; 'preview' holds changes in
+     `draft` until they are pushed. */
+  mode: 'live', draft: {}, help: null,
+};
 
 const SECTIONS = [
   { id: 'live',        label: 'LIVE CONTROL' },
@@ -509,6 +516,7 @@ function renderPages(state) {
     const html = build(state);
     if (html !== lastHtml[id]) { lastHtml[id] = html; host.innerHTML = html; }
     syncControls(host, state);
+    reHighlight();
   }
 }
 
@@ -573,7 +581,7 @@ async function pollIntegrations() {
     for (const src of ui.sources) {
       if (src.state === 'linked' || src.state === 'off') delete ui.device[src.id];
     }
-    if (JSON.stringify([ui.sources, ui.owned]) !== before) renderPages(store.state);
+    if (JSON.stringify([ui.sources, ui.owned]) !== before) renderPages(editor.state);
     applyOwnership();
   } catch { /* the SERVER UNREACHABLE pill already covers this */ }
 }
@@ -618,20 +626,180 @@ document.addEventListener('click', async (event) => {
 pollIntegrations();
 setInterval(pollIntegrations, 4000);
 
-bindControls(document.querySelector('.dash-panel'), store, { onReset: reset });
+/* ============================================================
+   Live / Preview
+   ============================================================
+   In LIVE, every change goes straight to the server and reaches OBS. In
+   PREVIEW, changes are held in a draft that only the preview frame is told
+   about, so a scene can be laid out mid-stream without the audience watching
+   it happen. PUSH TO LIVE sends the whole draft at once.
+
+   The draft never touches the server, and the server never learns it exists.
+   Everything downstream keeps its single owner: what OBS shows is still, at
+   all times, exactly what the server holds. */
+const previewFrame = $('#preview');
+let frameReady = false;
+
+/** State as the editor should show it: server state with the draft over it. */
+function editorState() {
+  return ui.mode === 'preview' && Object.keys(ui.draft).length
+    ? merge(store.state, ui.draft)
+    : store.state;
+}
+
+/** Push the current draft into the preview frame. */
+function sendPreview() {
+  if (!frameReady) return;
+  const win = previewFrame.contentWindow;
+  if (!win) return;
+  if (ui.mode === 'preview') {
+    win.postMessage({ channel: 'ja-preview', type: 'state', state: editorState() }, location.origin);
+  } else {
+    win.postMessage({ channel: 'ja-preview', type: 'clear' }, location.origin);
+  }
+}
+
+window.addEventListener('message', (event) => {
+  if (event.source !== previewFrame.contentWindow) return;
+  if (event.data?.channel !== 'ja-preview' || event.data.type !== 'ready') return;
+  /* A frame that just loaded knows nothing about the draft — resend it. */
+  frameReady = true;
+  sendPreview();
+});
+/* A scene change reloads the frame, so it must announce itself again. */
+previewFrame.addEventListener('load', () => { frameReady = false; });
+
+/**
+ * What every control writes through. In live mode it is the store; in preview
+ * it is the draft. Controls never learn which, so there is one write path.
+ */
+const editor = {
+  get state() { return editorState(); },
+  get config() { return store.config; },
+  get capabilities() { return store.capabilities; },
+  commit(patch) {
+    if (ui.mode === 'live') return store.commit(patch);
+    ui.draft = merge(ui.draft, patch);
+    refreshEditor();
+    return true;
+  },
+  fireAlert(alert) {
+    /* In preview a test alert plays in the frame only, which is the whole
+       point: nobody watching sees a fake follower. */
+    if (ui.mode === 'live') return store.fireAlert(alert);
+    previewFrame.contentWindow?.postMessage(
+      { channel: 'ja-preview', type: 'alert', alert }, location.origin);
+    return true;
+  },
+};
+
+/** Re-render the pages and the preview from the draft-merged state. */
+function refreshEditor() {
+  const state = editorState();
+  applyTheme(state.theme);
+  renderPages(state);
+  syncPlainInputs(state);
+  sendPreview();
+  updateModeBar();
+}
+
+function updateModeBar() {
+  const pending = Object.keys(ui.draft).length > 0;
+  const preview = ui.mode === 'preview';
+  $('#mode-bar').classList.toggle('is-preview', preview);
+  for (const b of document.querySelectorAll('[data-mode]')) {
+    b.classList.toggle('is-active', b.dataset.mode === ui.mode);
+  }
+  $('#mode-actions').hidden = !preview;
+  $('#push-live').disabled = !pending;
+  $('#mode-note').textContent = preview
+    ? (pending ? 'Held back from OBS. Push when you are happy.' : 'Changes will be held back from OBS.')
+    : 'Changes reach OBS as you make them.';
+}
+
+document.addEventListener('click', (event) => {
+  const opt = event.target.closest('[data-mode]');
+  if (opt) {
+    const next = opt.dataset.mode;
+    if (next === ui.mode) return;
+    if (next === 'live' && Object.keys(ui.draft).length) {
+      /* Switching to live with a draft pending would either lose it or push
+         it silently. Ask, because both are surprising. */
+      if (!confirm('Push your held changes to OBS?\n\nCancel keeps them in preview.')) return;
+      store.commit(ui.draft);
+    }
+    ui.mode = next;
+    ui.draft = {};
+    refreshEditor();
+    return;
+  }
+  if (event.target.closest('#push-live')) {
+    if (!Object.keys(ui.draft).length) return;
+    store.commit(ui.draft);
+    ui.draft = {};
+    ui.mode = 'live';
+    refreshEditor();
+    return;
+  }
+  if (event.target.closest('#discard-draft')) {
+    if (Object.keys(ui.draft).length && !confirm('Discard your held changes?')) return;
+    ui.draft = {};
+    refreshEditor();
+  }
+});
+
+/* ---------- the info panel ----------
+   Detail goes under the preview rather than in a tooltip: there is room for a
+   real sentence there, it does not cover the control being asked about, and it
+   stays put while the setting is adjusted. */
+function showHelp(path) {
+  const entry = helpFor(path);
+  const panel = $('#help-panel');
+  if (!entry) return;
+  ui.help = path;
+  panel.innerHTML = `
+    <div class="dash-help__card">
+      <div class="dash-help__title">${esc(entry.title)}</div>
+      <p class="dash-help__body">${esc(entry.body)}</p>
+      ${entry.note ? `<p class="dash-help__note">${esc(entry.note)}</p>` : ''}
+      <div class="dash-help__path">${esc(path)}</div>
+    </div>`;
+  for (const b of document.querySelectorAll('[data-help]')) {
+    b.classList.toggle('is-active', b.dataset.help === path);
+  }
+}
+
+document.addEventListener('click', (event) => {
+  const info = event.target.closest('[data-help]');
+  if (!info) return;
+  /* Inside a <label>, a click would otherwise be forwarded to the input. */
+  event.preventDefault();
+  event.stopPropagation();
+  showHelp(info.dataset.help);
+});
+
+/* Re-highlight the open entry after a page rebuilds its controls. */
+const reHighlight = () => {
+  if (!ui.help) return;
+  for (const b of document.querySelectorAll('[data-help]')) {
+    b.classList.toggle('is-active', b.dataset.help === ui.help);
+  }
+};
+
+bindControls(document.querySelector('.dash-panel'), editor, { onReset: reset });
 
 document.addEventListener('click', async (event) => {
   const preset = event.target.closest('[data-preset]');
   if (preset) {
     const chosen = THEME_PRESETS[preset.dataset.preset];
-    if (chosen) store.commit({ theme: { colors: { ...chosen.colors }, preset: preset.dataset.preset } });
+    if (chosen) editor.commit({ theme: { colors: { ...chosen.colors }, preset: preset.dataset.preset } });
     return;
   }
   const alertTab = event.target.closest('[data-alert-type]');
-  if (alertTab) { ui.alertType = alertTab.dataset.alertType; renderPages(store.state); return; }
+  if (alertTab) { ui.alertType = alertTab.dataset.alertType; renderPages(editor.state); return; }
 
   const goalTab = event.target.closest('[data-goal-key]');
-  if (goalTab) { ui.goalKey = goalTab.dataset.goalKey; renderPages(store.state); return; }
+  if (goalTab) { ui.goalKey = goalTab.dataset.goalKey; renderPages(editor.state); return; }
 
   if (event.target.closest('#reset-everything')) {
     if (!confirm('Reset every setting to defaults?\n\nYour uploaded artwork is kept — only the Clear button on the Branding page removes a file.')) return;
@@ -642,36 +810,36 @@ document.addEventListener('click', async (event) => {
 /* ---------- preview test data ---------- */
 $('#test-alert').addEventListener('click', () => {
   const kind = ui.alertType;
-  store.fireAlert({ kind, ...DEMO_EVENT[kind] });
+  editor.fireAlert({ kind, ...DEMO_EVENT[kind] });
 });
 $('#test-chat').addEventListener('click', () => {
   const demo = config.chat.demoMessages;
   const msg = { ...demo[Math.floor(Math.random() * demo.length)], at: new Date().toTimeString().slice(0, 5) };
-  const messages = [msg, ...(store.state.chat.messages ?? [])].slice(0, 20);
-  store.commit({ chat: { messages } });
+  const messages = [msg, ...(editor.state.chat.messages ?? [])].slice(0, 20);
+  editor.commit({ chat: { messages } });
 });
 $('#test-goal').addEventListener('click', () => {
   const key = ui.goalKey;
-  const goal = store.state.goals.items[key];
-  store.commit({ goals: { items: { [key]: { current: Math.min(goal.target, goal.current + Math.ceil(goal.target * 0.08)) } } } });
+  const goal = editor.state.goals.items[key];
+  editor.commit({ goals: { items: { [key]: { current: Math.min(goal.target, goal.current + Math.ceil(goal.target * 0.08)) } } } });
 });
 $('#reset-preview').addEventListener('click', () => {
-  store.commit({ chat: { messages: [...config.chat.demoMessages] } });
+  editor.commit({ chat: { messages: [...config.chat.demoMessages] } });
 });
 
 /* ---------- live control ---------- */
 for (const input of document.querySelectorAll('[data-path]')) {
   const isNumber = input.type === 'number' || input.type === 'range';
-  input.addEventListener('input', () => store.commit(patchFor(input.dataset.path, isNumber ? Number(input.value) : input.value)));
+  input.addEventListener('input', () => editor.commit(patchFor(input.dataset.path, isNumber ? Number(input.value) : input.value)));
 }
 for (const toggle of document.querySelectorAll('[data-toggle]')) {
-  toggle.addEventListener('click', () => store.commit(patchFor(toggle.dataset.toggle, !readPath(store.state, toggle.dataset.toggle))));
+  toggle.addEventListener('click', () => editor.commit(patchFor(toggle.dataset.toggle, !readPath(editor.state, toggle.dataset.toggle))));
 }
-$('#go-live').addEventListener('click', () => store.commit({ stream: { startedAt: Date.now() } }));
-$('#end-stream').addEventListener('click', () => store.commit({ stream: { startedAt: null } }));
+$('#go-live').addEventListener('click', () => editor.commit({ stream: { startedAt: Date.now() } }));
+$('#end-stream').addEventListener('click', () => editor.commit({ stream: { startedAt: null } }));
 $('#countdown').addEventListener('input', (event) => {
   const minutes = event.target.value.trim();
-  store.commit({ stream: { countdownSeconds: minutes === '' ? null : Math.round(Number(minutes) * 60) } });
+  editor.commit({ stream: { countdownSeconds: minutes === '' ? null : Math.round(Number(minutes) * 60) } });
 });
 
 $('#goals').innerHTML = GOAL_KEYS.map(({ key, label }) => `
@@ -686,7 +854,7 @@ $('#goals').innerHTML = GOAL_KEYS.map(({ key, label }) => `
   </div>`).join('');
 for (const input of document.querySelectorAll('[data-goal]')) {
   const [key, field] = input.dataset.goal.split('.');
-  input.addEventListener('input', () => store.commit({ goals: { items: { [key]: { [field]: Number(input.value) } } } }));
+  input.addEventListener('input', () => editor.commit({ goals: { items: { [key]: { [field]: Number(input.value) } } } }));
 }
 
 const TILE_FOR = { follower: 'follower', sub: 'sub', tip: 'tip' };
@@ -696,9 +864,9 @@ for (const button of document.querySelectorAll('[data-alert]')) {
     const name = $('#alert-name').value.trim() || 'someone';
     const amount = $('#alert-amount').value.trim();
     const message = $('#alert-message').value.trim();
-    store.fireAlert({ kind, name, amount: amount || undefined, message: message || undefined });
+    editor.fireAlert({ kind, name, amount: amount || undefined, message: message || undefined });
     const tile = TILE_FOR[kind];
-    if (tile) store.commit({ activity: { tiles: { [tile]: { value: kind === 'tip' && amount ? `${name} · ${amount}` : name } } } });
+    if (tile) editor.commit({ activity: { tiles: { [tile]: { value: kind === 'tip' && amount ? `${name} · ${amount}` : name } } } });
   });
 }
 
@@ -764,8 +932,8 @@ function renderSceneFields() {
         </div>`).join('')
     : '<p class="dash-panel__intro" style="margin:0">This scene has no editable text — everything on it is either design-fixed or driven by Live Control.</p>';
   for (const input of $('#scene-fields').querySelectorAll('[data-scene-field]')) {
-    input.value = readPath(store.state, input.dataset.sceneField) ?? '';
-    input.addEventListener('input', () => store.commit(patchFor(input.dataset.sceneField, input.value)));
+    input.value = readPath(editor.state, input.dataset.sceneField) ?? '';
+    input.addEventListener('input', () => editor.commit(patchFor(input.dataset.sceneField, input.value)));
   }
 }
 
@@ -802,11 +970,8 @@ document.addEventListener('click', (event) => {
 });
 
 /* ---------- render ---------- */
-store.subscribe((state) => {
-  /* The dashboard wears the theme it is editing. */
-  applyTheme(state.theme);
-  renderPages(state);
-
+/** The hand-written Live Control inputs, which are not built by controls.js. */
+function syncPlainInputs(state) {
   for (const input of document.querySelectorAll('[data-path]')) {
     if (document.activeElement === input) continue;
     const value = readPath(state, input.dataset.path);
@@ -815,6 +980,18 @@ store.subscribe((state) => {
   for (const toggle of document.querySelectorAll('[data-toggle]')) {
     toggle.classList.toggle('is-on', Boolean(readPath(state, toggle.dataset.toggle)));
   }
+}
+
+store.subscribe((serverState) => {
+  /* In preview the draft sits over server state, so the editor keeps showing
+     what is being worked on even as live values arrive underneath. */
+  const state = editorState();
+  /* The dashboard wears the theme it is editing. */
+  applyTheme(state.theme);
+  renderPages(state);
+  syncPlainInputs(state);
+  sendPreview();
+  updateModeBar();
 
   for (const { key } of GOAL_KEYS) {
     const goal = state.goals.items[key];
@@ -862,9 +1039,9 @@ store.subscribe((state) => {
 });
 
 setInterval(() => {
-  const ms = uptimeMs(store.state.stream, Date.now());
+  const ms = uptimeMs(editor.state.stream, Date.now());
   $('#uptime-readout').textContent = ms === null ? '--:--:--' : formatDuration(ms);
-  $('#caffeine-readout').textContent = `${caffeinePercent(store.state.caffeine, store.state.stream)}%`;
+  $('#caffeine-readout').textContent = `${caffeinePercent(editor.state.caffeine, editor.state.stream)}%`;
 }, 1000);
 
 selectScene(activeScene);

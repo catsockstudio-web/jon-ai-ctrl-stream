@@ -14,6 +14,8 @@
    page and an advanced user opens it.
    ============================================================ */
 
+import { helpFor } from './help.js';
+
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export const readPath = (obj, path) => path.split('.').reduce((acc, k) => acc?.[k], obj);
@@ -27,7 +29,12 @@ function field(ctrl) {
   if (!ctrl.path) return '';
 
   const id = `c-${ctrl.path.replace(/[.\[\]]/g, '-')}`;
-  const label = `<label class="ctl-field__label" for="${id}">${esc(ctrl.label)}${
+  /* The info button is only drawn where there is something to say, so an
+     icon is never a promise of an explanation that does not exist. */
+  const info = helpFor(ctrl.path)
+    ? `<button class="ctl-info" data-help="${esc(ctrl.path)}" title="What does this do?" aria-label="What does ${esc(ctrl.label)} do?">i</button>`
+    : '';
+  const label = `<label class="ctl-field__label" for="${id}">${esc(ctrl.label)}${info}${
     ctrl.reset === false ? '' : `<button class="ctl-reset" data-reset-control="${esc(ctrl.path)}" title="Reset this control">↺</button>`}</label>`;
   const hint = ctrl.hint ? `<div class="ctl-toggle__hint">${esc(ctrl.hint)}</div>` : '';
 
@@ -76,9 +83,13 @@ function field(ctrl) {
         </div>${hint}</div>`;
 
     case 'toggle':
-      return `<div class="ctl-toggle" data-ctl-toggle="${esc(ctrl.path)}">
-        <div><div class="ctl-toggle__label">${esc(ctrl.label)}</div>${ctrl.hint ? `<div class="ctl-toggle__hint">${esc(ctrl.hint)}</div>` : ''}</div>
-        <span class="ctl-switch"></span></div>`;
+      /* The info button sits outside the toggle's own click target, or
+         asking what a switch does would flip it. */
+      return `<div class="ctl-toggle-row">
+        <div class="ctl-toggle" data-ctl-toggle="${esc(ctrl.path)}">
+          <div><div class="ctl-toggle__label">${esc(ctrl.label)}</div>${ctrl.hint ? `<div class="ctl-toggle__hint">${esc(ctrl.hint)}</div>` : ''}</div>
+          <span class="ctl-switch"></span>
+        </div>${info}</div>`;
 
     default:
       return '';

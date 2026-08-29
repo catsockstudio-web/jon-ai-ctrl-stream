@@ -45,6 +45,19 @@
     <section class="dash-preview">
       <div class="dash-preview__frame"><iframe id="preview" title="Scene preview"></iframe></div>
       <div class="dash-scenes" id="scene-tabs"></div>
+      <!-- Preview holds changes back from OBS until you push them. -->
+      <div class="dash-mode" id="mode-bar">
+        <div class="dash-mode__switch" id="mode-switch">
+          <button class="dash-mode__opt is-active" data-mode="live">LIVE</button>
+          <button class="dash-mode__opt" data-mode="preview">PREVIEW</button>
+        </div>
+        <span class="dash-mode__note" id="mode-note">Changes reach OBS as you make them.</span>
+        <span class="dash-mode__actions" id="mode-actions" hidden>
+          <button class="ctl-btn ctl-btn--cyan" id="push-live">PUSH TO LIVE</button>
+          <button class="ctl-btn ctl-btn--ghost" id="discard-draft">DISCARD</button>
+        </span>
+      </div>
+
       <div class="dash-preview__tools">
         <span class="dash-demo-tag">DEMO DATA</span>
         <button class="ctl-btn" id="test-alert">TEST ALERT</button>
@@ -52,10 +65,13 @@
         <button class="ctl-btn" id="test-goal">+ GOAL</button>
         <button class="ctl-btn ctl-btn--ghost" id="reset-preview">RESET PREVIEW</button>
       </div>
-      <p class="dash-panel__intro" style="margin:0">
-        The checkerboard is transparency — game capture and your camera show through there.
-        Changes apply to every open OBS source the moment you make them.
-      </p>
+      <!-- Filled by the info buttons beside each control. -->
+      <div class="dash-help" id="help-panel">
+        <p class="dash-help__idle">
+          The checkerboard is transparency — game capture and your camera show through there.<br>
+          Press the <b>i</b> beside any control to read what it does here.
+        </p>
+      </div>
     </section>
 
     <!-- ---------------- controls ---------------- -->

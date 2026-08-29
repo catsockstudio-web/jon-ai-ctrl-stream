@@ -100,14 +100,21 @@ export function createAlertLayer(store, { base = '../' } = {}) {
     }, duration));
   }
 
-  store.onAlert((alert) => {
+  const enqueue = (alert) => {
     const state = store.state;
     if (!state.widgets?.alerts?.enabled) return;
     const maxQueue = store.config.alerts?.maxQueue ?? 12;
     if (queue.length >= maxQueue) return;
     queue.push(alert);
     next();
-  });
+  };
+
+  store.onAlert(enqueue);
+
+  /* The dashboard's preview frame uses this to show a test alert without one
+     going out to OBS. Only reachable from a same-origin parent frame, which a
+     real browser source does not have — see the preview override in scene.js. */
+  if (window.parent !== window) window.__jaPreviewAlert = enqueue;
 
   /* Nothing accumulates: each card and its ghost are removed together, and
      the timers that own them are cleared if the layer goes away. */

@@ -60,12 +60,20 @@ export async function startScene(config, options) {
 
   const store = await boot(config);
 
-  let lastHtml = null;
-  store.subscribe((state) => {
-    /* Accents, glow, background brightness and the motion level, all from
-       server state — so a theme change reaches every open source at once. */
-    applyTheme(state.theme);
+  /* ---------- dashboard preview override ----------
+     The dashboard can hold changes back from OBS while someone lays a scene
+     out. Its preview iframe therefore needs to render a state the server has
+     never been told about.
 
+     This is NOT a second transport. It only ever applies to a page running
+     inside a same-origin frame — a real OBS browser source is top-level, so
+     `window.parent === window` and nothing below can be reached at all. It is
+     never persisted and never sent anywhere. */
+  const framed = window.parent !== window;
+  let draft = null;
+
+  const paint = (state) => {
+    applyTheme(state.theme);
     const html = render(state);
     if (html !== lastHtml) {
       lastHtml = html;
@@ -73,7 +81,27 @@ export async function startScene(config, options) {
       bindAssets(content, config, base, state);
     }
     onRender?.(state, content, store);
+  };
+
+  let lastHtml = null;
+  store.subscribe((state) => {
+    /* Accents, glow, background brightness and the motion level, all from
+       server state — so a theme change reaches every open source at once. */
+    paint(draft ?? state);
   });
+
+  if (framed) {
+    window.addEventListener('message', (event) => {
+      if (event.source !== window.parent) return;
+      const msg = event.data;
+      if (!msg || msg.channel !== 'ja-preview') return;
+      if (msg.type === 'state') { draft = msg.state; paint(draft); }
+      else if (msg.type === 'clear') { draft = null; paint(store.state); }
+      else if (msg.type === 'alert') window.__jaPreviewAlert?.(msg.alert);
+    });
+    /* Tell the dashboard we are ready, so a draft sent during load is resent. */
+    window.parent.postMessage({ channel: 'ja-preview', type: 'ready' }, window.location.origin);
+  }
 
   if (alerts) stage.appendChild(createAlertLayer(store, { base, offsetTop: alertOffsetTop }));
   startTicker(document.body, store);

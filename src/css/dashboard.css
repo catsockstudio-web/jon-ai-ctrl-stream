@@ -587,3 +587,74 @@ body.dash {
 .dash-grid--sources .dash-status { flex-direction: column; align-items: flex-start; gap: 8px; }
 .dash-grid--sources .dash-status > div { order: 2; }
 .dash-grid--sources .dash-tag { order: 1; }
+
+/* ---------- info buttons and the detail panel ---------- */
+.ctl-info {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; margin-left: 7px; padding: 0;
+  border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
+  border-radius: 50%; background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; line-height: 1;
+  color: var(--cyan); opacity: .62; vertical-align: middle;
+  transition: opacity 120ms, background 120ms;
+}
+.ctl-info:hover { opacity: 1; background: color-mix(in srgb, var(--cyan) 16%, transparent); }
+.ctl-info.is-active {
+  opacity: 1; color: var(--bg);
+  background: var(--cyan); border-color: var(--cyan);
+}
+/* A toggle's whole body is its click target, so the info button sits beside
+   it rather than inside — asking what a switch does must not flip it. */
+.ctl-toggle-row { display: flex; align-items: center; gap: 8px; }
+.ctl-toggle-row .ctl-toggle { flex: 1; margin-bottom: 0; }
+.ctl-toggle-row + .ctl-toggle-row { margin-top: 8px; }
+
+.dash-help { margin: 0; min-height: 96px; }
+.dash-help__idle { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-2); }
+.dash-help__card {
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--cyan);
+  border-radius: var(--radius-sm);
+  background: rgba(10, 10, 15, .55);
+}
+.dash-help__title {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--cyan); margin-bottom: 7px;
+}
+.dash-help__body { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-1); }
+.dash-help__note {
+  margin: 8px 0 0; padding-left: 10px; font-size: 12.5px; line-height: 1.5;
+  color: var(--amber); border-left: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+}
+.dash-help__path {
+  margin-top: 10px; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: .08em; color: var(--text-2); opacity: .55;
+}
+
+/* ---------- live / preview ---------- */
+.dash-mode {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px;
+  padding: 10px 12px; margin-bottom: 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius-sm);
+  background: rgba(10, 10, 15, .5);
+}
+.dash-mode.is-preview {
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: color-mix(in srgb, var(--amber) 10%, rgba(10, 10, 15, .5));
+}
+.dash-mode__switch {
+  display: inline-flex; border: 1px solid var(--hairline);
+  border-radius: 999px; overflow: hidden;
+}
+.dash-mode__opt {
+  padding: 6px 16px; border: 0; background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .2em;
+  color: var(--text-2); transition: background 120ms, color 120ms;
+}
+.dash-mode__opt.is-active { background: var(--cyan); color: #0A0A0F; }
+.dash-mode.is-preview .dash-mode__opt.is-active { background: var(--amber); color: #0A0A0F; }
+.dash-mode__note { font-size: 12.5px; color: var(--text-2); flex: 1; min-width: 180px; }
+.dash-mode__actions { display: inline-flex; gap: 8px; }
+.dash-mode__actions[hidden] { display: none; }
+.dash-mode__actions .ctl-btn:disabled { opacity: .4; cursor: default; }

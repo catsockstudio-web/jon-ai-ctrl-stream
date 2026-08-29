@@ -448,6 +448,121 @@ async function scene(path = '/scenes/gameplay.html') {
 }
 
 /* ============================================================
+   6d. Preview mode holds changes back from OBS
+   ============================================================ */
+{
+  /* The promise is narrow and worth testing exactly: in preview, a change
+     shows in the dashboard's own frame and reaches nothing else. */
+  const obs = await scene();          /* stands in for a browser source */
+  const dash = await ctx.newPage();
+  await dash.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
+  await dash.waitForTimeout(2200);
+
+  await fetch(`${BASE}/api/reset`, { method: 'POST' });
+  await dash.waitForTimeout(700);
+
+  const accentOf = (page) => page.evaluate(
+    () => getComputedStyle(document.documentElement).getPropertyValue('--violet').trim().toLowerCase());
+  const frameAccent = () => dash.frameLocator('#preview').locator(':root')
+    .evaluate((e) => getComputedStyle(e).getPropertyValue('--violet').trim().toLowerCase());
+  const serverAccent = async () => (await getState()).theme.colors.primary.toLowerCase();
+
+  await dash.click('[data-mode="preview"]');
+  await dash.waitForTimeout(500);
+
+  const before = await accentOf(obs);
+  await dash.evaluate(() => {
+    const i = document.querySelector('#c-theme-colors-primary');
+    i.value = '#ff0000';
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await dash.waitForTimeout(900);
+
+  check('a preview edit shows in the dashboard frame', (await frameAccent()) === '#ff0000', await frameAccent());
+  check('a preview edit does not reach a browser source', (await accentOf(obs)) === before, await accentOf(obs));
+  check('a preview edit does not reach the server', (await serverAccent()) !== '#ff0000', await serverAccent());
+  check('the push button becomes available', !(await dash.locator('#push-live').isDisabled()));
+
+  await dash.click('#push-live');
+  await dash.waitForTimeout(1100);
+  check('pushing sends the held change to the server', (await serverAccent()) === '#ff0000', await serverAccent());
+  check('pushing reaches the browser source', (await accentOf(obs)) === '#ff0000', await accentOf(obs));
+  check('pushing returns to live', await dash.locator('[data-mode="live"]').evaluate((e) => e.classList.contains('is-active')));
+
+  /* Discard must throw the draft away without touching anything. */
+  await dash.click('[data-mode="preview"]');
+  await dash.waitForTimeout(400);
+  await dash.evaluate(() => {
+    const i = document.querySelector('#c-theme-colors-primary');
+    i.value = '#00ff88';
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await dash.waitForTimeout(700);
+  dash.once('dialog', (d) => d.accept());
+  await dash.click('#discard-draft');
+  await dash.waitForTimeout(800);
+  check('discard leaves the server alone', (await serverAccent()) === '#ff0000', await serverAccent());
+  check('discard restores the frame to live state', (await frameAccent()) === '#ff0000', await frameAccent());
+
+  /* A real browser source is top-level, so the preview channel must be
+     unreachable there — this is what stops it becoming a second transport. */
+  const exposed = await obs.evaluate(() => window.parent !== window);
+  check('a top-level source has no preview channel', exposed === false);
+
+  await dash.close();
+  await obs.close();
+  await fetch(`${BASE}/api/reset`, { method: 'POST' });
+}
+
+/* ============================================================
+   6e. Every control explains itself
+   ============================================================ */
+{
+  const dash = await ctx.newPage();
+  await dash.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
+  await dash.waitForTimeout(2200);
+
+  /* Walk every page so all controls are in the DOM. */
+  const paths = new Set();
+  for (const id of ['live', 'theme', 'alerts', 'chat', 'goals', 'widgets']) {
+    await dash.click(`[data-nav="${id}"]`);
+    await dash.waitForTimeout(220);
+  }
+  for (const p of await dash.$$eval(
+    '[data-ctl],[data-ctl-seg],[data-ctl-pos],[data-ctl-toggle],[data-path],[data-toggle]',
+    (els) => els.map((e) => e.dataset.ctl || e.dataset.ctlSeg || e.dataset.ctlPos
+      || e.dataset.ctlToggle || e.dataset.path || e.dataset.toggle))) if (p) paths.add(p);
+
+  const { helpFor } = await import('../src/js/help.js');
+  const missing = [...paths].filter((p) => !helpFor(p));
+  check('every control has help text', missing.length === 0, missing.slice(0, 4).join(', '));
+
+  const buttons = await dash.locator('[data-help]').count();
+  check('info buttons are rendered', buttons > 100, `${buttons} buttons`);
+
+  /* Reading the help must not change the setting it describes. */
+  await dash.click('[data-nav="widgets"]');
+  await dash.waitForTimeout(400);
+  const toggleBefore = (await getState()).widgets.brandBar.enabled;
+  await dash.locator('[data-help="widgets.brandBar.enabled"]').first().click();
+  await dash.waitForTimeout(600);
+  check('asking what a switch does does not flip it',
+    (await getState()).widgets.brandBar.enabled === toggleBefore);
+  check('the panel shows that control\'s help',
+    (await dash.locator('.dash-help__title').textContent()).trim().length > 0,
+    await dash.locator('.dash-help__title').textContent());
+
+  await dash.click('[data-nav="theme"]');
+  await dash.waitForTimeout(400);
+  await dash.locator('[data-help="theme.performance"]').first().click();
+  await dash.waitForTimeout(400);
+  const body = await dash.locator('.dash-help__body').textContent();
+  check('help matches the control asked about', /LOW|BALANCED|HIGH/.test(body), body.slice(0, 60));
+
+  await dash.close();
+}
+
+/* ============================================================
    7. Resets
    ============================================================ */
 {
