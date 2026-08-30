@@ -2,9 +2,15 @@
 REM Stop the overlay server.
 REM
 REM Asks the server to shut itself down first. Force-killing whatever held the
-REM port is what used to leave stray node.exe processes behind: any server not
-REM currently listening survived, and could take the port later. Anything that
-REM ignores the polite request is still cleaned up below.
+REM port is what used to leave stray processes behind: any server not currently
+REM listening survived, and could take the port later. Anything that ignores
+REM the polite request is still cleaned up below.
+REM
+REM The sweep matches cmd.exe as well as node.exe. The server runs as
+REM "cmd /c node server.mjs > server.log", and it is CMD that owns the
+REM server.log handle and has this folder as its working directory - so
+REM killing only node.exe left the folder locked and undeletable, which looked
+REM exactly like the stop having not worked.
 title Nightwire - Stop Server
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -19,7 +25,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "if(-not $stopped){" ^
   "  Get-NetTCPConnection -LocalPort 8787 -State Listen -ErrorAction SilentlyContinue ^| ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" ^
   "};" ^
-  "$strays = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -and $_.CommandLine -match 'server\.mjs' });" ^
+  "$strays = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.CommandLine -and $_.CommandLine -match 'server\.mjs' -and $_.Name -in @('node.exe','cmd.exe') });" ^
   "if($strays.Count -gt 0){" ^
   "  Write-Host '';" ^
   "  Write-Host ('  ' + $strays.Count + ' other overlay server process(es) are still running:');" ^

@@ -29,7 +29,7 @@ REM nothing on screen explaining why.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "try { Invoke-RestMethod -Uri 'http://127.0.0.1:8787/api/shutdown' -Method Post -TimeoutSec 5 -ErrorAction Stop ^| Out-Null; Start-Sleep -Milliseconds 800; Write-Host '        Asked it to stop.' } catch { Write-Host '        Nothing was answering on port 8787.' };" ^
   "$here = (Get-Location).Path;" ^
-  "$mine = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.CommandLine -and $_.CommandLine -match 'server\.mjs' });" ^
+  "$mine = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue ^| Where-Object { $_.CommandLine -and ($_.CommandLine -match 'server\.mjs' -or $_.CommandLine -match 'Nightwire\.ps1') -and $_.Name -in @('node.exe','cmd.exe','powershell.exe') });" ^
   "if($mine.Count -gt 0){" ^
   "  Write-Host '';" ^
   "  Write-Host ('        ' + $mine.Count + ' overlay process(es) still running:');" ^
