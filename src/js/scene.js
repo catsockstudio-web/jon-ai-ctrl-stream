@@ -16,7 +16,7 @@
 import { boot } from './providers/index.js';
 import { mountStage } from './stage.js';
 import { bindAssets } from './assets.js';
-import { startTicker, createAlertLayer } from './widgets.js';
+import { startTicker, createAlertLayer, applyWidthFits } from './widgets.js';
 import { applyTheme } from './theme.js';
 
 /**
@@ -79,6 +79,10 @@ export async function startScene(config, options) {
       lastHtml = html;
       content.innerHTML = html;
       bindAssets(content, config, base, state);
+      /* Scoped to an actual markup change, same as bindAssets above: when the
+         html string is unchanged the DOM node survives with whatever inline
+         font-size a previous fit already set, so there is nothing to redo. */
+      applyWidthFits(content);
     }
     onRender?.(state, content, store);
   };

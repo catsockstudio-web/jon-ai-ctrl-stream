@@ -100,6 +100,7 @@ const BRANDING_SLOTS = [
   ['startingBackground', 'Starting Soon background', 'Full 1920 × 1080'],
   ['brbBackground', 'BRB background', 'Full 1920 × 1080'],
   ['endingBackground', 'Ending background', 'Full 1920 × 1080'],
+  ['offlineBackground', 'Offline background', 'Full 1920 × 1080'],
 ];
 
 const MODULE_SOURCES = [

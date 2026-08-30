@@ -193,7 +193,7 @@ check('scene text edit reaches server state', st4.channel.tagline === 'Cat Sock 
 
 // branding slots + OBS urls
 await page.click('[data-nav="branding"]');
-check('branding shows every slot', await page.locator('.dash-drop').count() === 7);
+check('branding shows every slot', await page.locator('.dash-drop').count() === 8);
 await page.click('[data-nav="obs"]');
 check('OBS setup lists copy buttons', await page.locator('[data-copy]').count() >= 13);
 

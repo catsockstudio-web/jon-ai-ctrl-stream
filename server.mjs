@@ -92,7 +92,7 @@ const ASSETS_DIR = join(ROOT, 'assets');
    before a byte is written. */
 const BRANDING_SLOTS = new Set([
   'logo', 'avatar', 'mascot', 'brbArt',
-  'startingBackground', 'brbBackground', 'endingBackground',
+  'startingBackground', 'brbBackground', 'endingBackground', 'offlineBackground',
 ]);
 
 const IMAGE_TYPES = [

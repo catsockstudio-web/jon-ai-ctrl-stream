@@ -205,3 +205,68 @@ export function fitToHeight(el, maxHeight, { minSize = 48, step = 2, measure = n
      the design's size even if the first paint used a fallback face. */
   document.fonts?.ready?.then(run).catch(() => {});
 }
+
+/* ------------------------------------------------------------
+   fitToWidth — shrink a single unbreakable run of text (a
+   channel wordmark, a handle) until it fits its own box.
+
+   fitToHeight exists for text that CAN wrap: a fallback font
+   pushes it to an extra line, the column grows too tall, and
+   shrinking the font brings the height back down. A wordmark is
+   the opposite case — one word, no spaces, nothing for the
+   browser to break at — so it never wraps and instead overflows
+   sideways in total silence: no console warning, no layout shift
+   anyone would notice in a screenshot, just text that quietly
+   runs past its box and gets clipped by whatever contains it.
+
+   It went unnoticed here because the shipped demo name happened
+   to be short enough to fit. It is exactly the class of bug a
+   customer's own (longer) name would hit on the first day, which
+   is why every wordmark in the package is now guarded rather than
+   just the one that got reported.
+   ------------------------------------------------------------ */
+export function fitToWidth(el, { minSize = 48, step = 2 } = {}) {
+  if (!el) return;
+  const authored = parseFloat(getComputedStyle(el).fontSize);
+  if (!Number.isFinite(authored)) return;
+
+  /* A block element's own box does not shrink to its content, so measuring
+     el.getBoundingClientRect() would report the box, not the overflow.
+     A Range around the text gives the actual rendered width instead. */
+  const textWidth = () => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return range.getBoundingClientRect().width;
+  };
+
+  const run = () => {
+    const budget = el.getBoundingClientRect().width;
+    if (!budget) return;
+    let size = authored;
+    el.style.fontSize = `${size}px`;
+    while (textWidth() > budget && size > minSize) {
+      size -= step;
+      el.style.fontSize = `${size}px`;
+    }
+  };
+
+  run();
+  document.fonts?.ready?.then(run).catch(() => {});
+}
+
+/**
+ * Apply fitToWidth to every `[data-fit-width]` element under `root`.
+ *
+ * Declarative on purpose, the same way `[data-asset]` is: a scene marks the
+ * element in its own markup and the fit happens automatically on every
+ * render, rather than every scene remembering to wire an onRender call by
+ * hand. The wordmark is used from four different templates; a fix that
+ * depended on each of them opting in individually is exactly the kind of
+ * fix that quietly misses the fourth one.
+ */
+export function applyWidthFits(root) {
+  for (const el of root.querySelectorAll('[data-fit-width]')) {
+    const min = Number(el.dataset.fitMin);
+    fitToWidth(el, Number.isFinite(min) ? { minSize: min } : undefined);
+  }
+}

@@ -189,15 +189,18 @@
       Every scene, browser source, size and position comes in already set up.</li>
     <li><b>Switch to the imported collection</b> under <i>Scene Collection</i>.</li>
     <li><b>Add your camera and game capture.</b> These are the only two things the import cannot
-      create, because only you know which devices they are. Put them <b>below</b> the overlay in the
-      source list — the overlay has a transparent hole cut for the camera.</li>
+      create, because only you know which devices they are. Put both <b>below</b> the overlay in the
+      source list, with the <b>camera above the game capture</b> — top to bottom that is
+      Overlay, Camera, Game Capture.</li>
   </ol>
 
   <div class="note note--warn">
-    <b>Order matters.</b>
-    The overlay goes on <b>top</b>; the camera and game capture go <b>underneath</b>. The camera
-    opening is a genuine transparent cutout, so the camera shows through it while the frame and
-    nameplate stay drawn on top. If you put the camera above the overlay, it will cover the frame.
+    <b>Order matters — three layers, in this order top to bottom: Overlay, Camera, Game Capture.</b>
+    The overlay goes on <b>top</b>; the camera opening is a genuine transparent cutout, so the camera
+    shows through it while the frame and nameplate stay drawn over it. The camera itself must sit
+    <b>above the game capture</b>, because game capture is a full-screen, opaque source — if it is
+    listed above the camera it will cover the camera completely wherever the two overlap. If you put
+    the camera above the overlay, it will cover the frame instead.
   </div>
 
   <h3>The manual way — one browser source per scene</h3>
@@ -755,6 +758,11 @@
   <h3>My camera is covered by the overlay</h3>
   <p>The camera source is above the overlay in the source list. Drag it below. The overlay has a
   transparent hole cut for it and is meant to sit on top.</p>
+
+  <h3>My camera is covered by my game capture</h3>
+  <p>On the Gameplay scene, game capture is a full-screen, opaque source. If it is listed above the
+  camera, it hides the camera wherever the two overlap. Drag the camera above the game capture —
+  the source list should read Overlay, then Camera, then Game Capture, top to bottom.</p>
 
   <h3>The dashboard says SERVER UNREACHABLE</h3>
   <p>Run <code>Start Server.bat</code>. If it says the port is already in use, the server is already

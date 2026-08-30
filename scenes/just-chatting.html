@@ -19,6 +19,7 @@ import config from '../config.js';
 import { startScene } from '../src/js/scene.js';
 import { avatar, chatBox, webcamFrame, infoTile, goalBar, widgetPlacement, stinger, sceneGround, CAMERA_OPENINGS } from '../src/js/components.js';
 import { fitToHeight } from '../src/js/widgets.js';
+import { escapeHtml } from '../src/js/format.js';
 
 startScene(config, {
   alerts: true,
@@ -33,7 +34,7 @@ startScene(config, {
 
       <div style="position:absolute;left:56px;top:48px;display:flex;align-items:center;gap:16px">
         ${avatar({ size: 52 })}
-        <div style="font-family:var(--font-display);font-weight:700;font-size:34px;letter-spacing:.06em;color:var(--text-1)">${channel.wordmark}</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:34px;letter-spacing:.06em;color:var(--text-1);max-width:900px" data-fit-width data-fit-min="18">${escapeHtml(channel.wordmark)}</div>
         <div style="width:1px;height:34px;background:rgba(255,255,255,.14)"></div>
         <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:16px;letter-spacing:.24em;color:var(--cyan)">
           <span class="ja-dot${live ? '' : ' ja-dot--offline'}"></span>${channel.showName} // ${live ? 'ONLINE' : 'OFFLINE'}

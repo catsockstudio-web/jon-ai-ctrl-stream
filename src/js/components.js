@@ -38,7 +38,7 @@ export function brandBar(state) {
     <div class="ja-brand-bar">
       ${avatar({ size: 56 })}
       <div class="ja-brand-bar__text">
-        <div class="ja-brand-bar__wordmark">${escapeHtml(channel.wordmark)}</div>
+        <div class="ja-brand-bar__wordmark" data-fit-width data-fit-min="14">${escapeHtml(channel.wordmark)}</div>
         <div class="ja-brand-bar__status">
           <span class="ja-dot${live ? '' : ' ja-dot--offline'}"></span>
           <span class="ja-brand-bar__show">${escapeHtml(channel.showName)}</span>
