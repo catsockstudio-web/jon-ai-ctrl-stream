@@ -29,14 +29,39 @@ export function probe(url) {
   return result;
 }
 
+/* Which binding is the current one for a given element. Binding is async —
+   it waits on a probe — so two rebinds in quick succession (upload, then
+   replace) can resolve out of order and the slower, older one would win.
+   Each call claims a number; only the newest one is allowed to paint. */
+const binding = new WeakMap();
+
+/** Take an asset back off a slot, returning it to its CSS placeholder. */
+function clearAssetSlot(el) {
+  el.classList.remove('has-asset');
+  el.style.removeProperty('--asset-image');
+}
+
 /**
  * Point one element at an optional asset.
  * Adds `has-asset` + `--asset-image` only if the file actually loads.
+ *
+ * Reversible on purpose: passing no url — a cleared slot, or a file that no
+ * longer loads — strips the class again. Binding used to only ever add, so
+ * CLEAR left the old art on screen until the source was reloaded.
  */
 export async function applyAssetSlot(el, url) {
-  if (!el || !url) return false;
+  if (!el) return false;
+
+  const seq = (binding.get(el) ?? 0) + 1;
+  binding.set(el, seq);
+  const current = () => binding.get(el) === seq;
+
+  if (!url) { clearAssetSlot(el); return false; }
+
   const ok = await probe(url);
-  if (!ok) return false;
+  if (!current()) return false;
+  if (!ok) { clearAssetSlot(el); return false; }
+
   /* Resolve against the DOCUMENT before handing the URL to CSS.
      A url() inside a custom property is resolved relative to the stylesheet
      that consumes it, not the page — so '../assets/x.png' set from a scene in
@@ -63,8 +88,12 @@ export async function applyAssetSlot(el, url) {
 export function bindAssets(root, config, base = '', state = null) {
   const slots = root.querySelectorAll('[data-asset]');
   return Promise.all([...slots].map((el) => {
+    /* Always hand the slot to applyAssetSlot, even with no url. Skipping the
+       call for an empty slot meant a cleared upload was never unbound when
+       the slot has no config.assets fallback to fall back to — offline's
+       background being exactly that case — so the old art stayed on screen. */
     const url = assetUrl(el.dataset.asset, config, base, state);
-    return url ? applyAssetSlot(el, url) : false;
+    return applyAssetSlot(el, url);
   }));
 }
 

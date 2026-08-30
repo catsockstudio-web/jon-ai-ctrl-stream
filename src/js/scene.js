@@ -78,12 +78,22 @@ export async function startScene(config, options) {
     if (html !== lastHtml) {
       lastHtml = html;
       content.innerHTML = html;
-      bindAssets(content, config, base, state);
-      /* Scoped to an actual markup change, same as bindAssets above: when the
-         html string is unchanged the DOM node survives with whatever inline
-         font-size a previous fit already set, so there is nothing to redo. */
+      /* Scoped to an actual markup change: when the html string is unchanged
+         the DOM node survives with whatever inline font-size a previous fit
+         already set, so there is nothing to redo. */
       applyWidthFits(content);
     }
+
+    /* Outside the markup guard, unlike everything above it. Branding is
+       applied as CSS custom properties on [data-asset] elements, never as
+       text in the markup — so uploading or clearing an image does not change
+       the html string, the guard above stays shut, and the rebind never runs.
+       In a browser source nobody reloads, which is every OBS source, that
+       meant an uploaded image simply never appeared. Rebinding on each paint
+       is cheap: probe() caches per URL, so an unchanged slot costs a cache
+       hit and re-sets the property it already had. */
+    bindAssets(content, config, base, state);
+
     onRender?.(state, content, store);
   };
 

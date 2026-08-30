@@ -824,6 +824,89 @@ async function scene(path = '/scenes/gameplay.html') {
   await page.close();
 }
 
+/* ============================================================
+   12. Branding reaches a source that is ALREADY OPEN
+
+   The regression this exists for: branding is applied as CSS custom
+   properties on [data-asset] elements, never as text in the scene's
+   markup. The render loop skips rebinding when the markup string is
+   unchanged — and an upload never changes it — so uploaded art reached
+   a source only if something else happened to reload the page. In OBS,
+   where a source is opened once and left running for the whole stream,
+   that meant it never appeared at all.
+
+   The pre-existing asset checks in alpha.mjs all open the page *after*
+   the file is in place, so every one of them passed throughout. These
+   upload while the page is open, which is the order a real user works
+   in, and assert both directions: an upload appears, and a CLEAR takes
+   it back off.
+   ============================================================ */
+{
+  /* A 2x2 PNG, built here so the suite needs no fixture on disk. */
+  const { deflateSync } = await import('node:zlib');
+  const crc = (buf) => {
+    let c, n = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i += 1) {
+      c = (n ^ buf[i]) & 0xFF;
+      for (let j = 0; j < 8; j += 1) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      n = (n >>> 8) ^ c;
+    }
+    return (n ^ 0xFFFFFFFF) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const t = Buffer.from(type, 'ascii');
+    const c = Buffer.alloc(4); c.writeUInt32BE(crc(Buffer.concat([t, data])));
+    return Buffer.concat([len, t, data, c]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(2, 0); ihdr.writeUInt32BE(2, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const rows = Buffer.concat([...Array(2)].map(() => Buffer.from([0, 255, 0, 255, 255, 0, 255])));
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(rows)), chunk('IEND', Buffer.alloc(0)),
+  ]);
+
+  const upload = (slot) => fetch(`${BASE}/api/branding/${slot}`, {
+    method: 'POST', headers: { 'content-type': 'image/png' }, body: png,
+  });
+  const clear = (slot) => fetch(`${BASE}/api/branding/${slot}/clear`, { method: 'POST' });
+  const bound = (page, slot) => page.evaluate((s) => {
+    const el = document.querySelector(`[data-asset="${s}"]`);
+    return el ? el.classList.contains('has-asset') : null;
+  }, slot);
+
+  /* Every full-card background, plus the mascot: each one reported as
+     "no image loads" by the same mechanism. */
+  const slots = [
+    ['/scenes/starting-soon.html', 'mascot'],
+    ['/scenes/starting-soon.html', 'startingBackground'],
+    ['/scenes/brb.html', 'brbBackground'],
+    ['/scenes/ending.html', 'endingBackground'],
+    ['/scenes/offline.html', 'offlineBackground'],
+  ];
+
+  for (const [path, slot] of slots) {
+    await clear(slot);
+    const page = await scene(path);                 /* opened BEFORE the upload */
+    const before = await bound(page, slot);
+
+    await upload(slot);
+    await page.waitForTimeout(900);                 /* no reload anywhere */
+    const after = await bound(page, slot);
+    check(`${slot}: an upload reaches an already-open source`,
+      before === false && after === true, `${before} -> ${after}`);
+
+    /* Back to whatever it was before the upload, rather than a hardcoded
+       false: clearing falls back to config.assets, and a checkout that
+       ships a real file for this slot would legitimately still be bound. */
+    await clear(slot);
+    await page.waitForTimeout(900);
+    check(`${slot}: clearing takes it back off, live`, (await bound(page, slot)) === before);
+    await page.close();
+  }
+}
+
 await browser.close();
 await stopServer();
 await rm(STATE_FILE, { force: true });
