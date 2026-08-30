@@ -17,8 +17,26 @@
 # ============================================================
 
 $ErrorActionPreference = 'Stop'
+
+# Everything written here goes to tray.log (Nightwire.vbs redirects it). A tray
+# icon that does not appear is otherwise indistinguishable from one that was
+# never launched, and both look like "the shortcut does nothing".
+Write-Output "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] tray starting"
+Write-Output "  PowerShell : $($PSVersionTable.PSVersion)"
+Write-Output "  Policy     : $(Get-ExecutionPolicy)"
+Write-Output "  Folder     : $(Split-Path -Parent $MyInvocation.MyCommand.Path)"
+
+# Script-wide: any terminating error lands in the log with its location,
+# rather than killing a hidden process in silence.
+trap {
+    Write-Output "TRAY FAILED: $($_.Exception.Message)"
+    Write-Output $_.ScriptStackTrace
+    exit 1
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Write-Output "  WinForms   : loaded"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Port = 8787
@@ -192,13 +210,18 @@ $timer.Add_Tick({
 $timer.Start()
 
 if (-not (Start-Server)) {
+    Write-Output '  server     : NOT RUNNING (see server.log)'
     $tray.BalloonTipTitle = 'Nightwire'
     $tray.BalloonTipText = 'The overlay server did not start. See server.log in the package folder.'
     $tray.ShowBalloonTip(5000)
+} else {
+    Write-Output '  server     : running'
 }
 $timer.Enabled = $true
 
+Write-Output '  icon       : visible - tray is up'
 [System.Windows.Forms.Application]::Run()
+Write-Output "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] tray exited"
 
 $tray.Visible = $false
 $tray.Dispose()

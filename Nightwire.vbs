@@ -43,7 +43,24 @@ End If
 
 ' The tray is best-effort. Anything that goes wrong from here leaves a working
 ' overlay behind, which is the only guarantee that actually matters.
+'
+' Run through cmd so PowerShell's own output lands in tray.log. Launching it
+' hidden and directly meant that when it refused to run — a group-policy
+' execution policy beats -ExecutionPolicy Bypass — it failed with nothing
+' written anywhere, and the only symptom was a shortcut that appeared to do
+' nothing at all. A log is the difference between a diagnosis and a guess.
 On Error Resume Next
-shell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File """ _
-          & repo & "\Nightwire.ps1""", 0, False
+shell.Run "cmd /c powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ _
+          & repo & "\Nightwire.ps1"" > tray.log 2>&1", 0, False
 On Error GoTo 0
+
+' Clicking the icon must always DO something. At sign-in the server is not yet
+' up, so starting it silently is right and a browser window would be rude. But
+' someone double-clicking the shortcut on a machine where it is already
+' running has asked for something, and until now got no response whatsoever —
+' the tray icon was the only feedback, and it is the part that can fail.
+If running Then
+  On Error Resume Next
+  shell.Run "http://127.0.0.1:8787/dashboard.html", 1, False
+  On Error GoTo 0
+End If

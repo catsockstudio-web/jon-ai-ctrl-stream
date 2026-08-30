@@ -128,7 +128,49 @@ function draw(size) {
    targets anyway. */
 const SIZES = [16, 24, 32, 48, 64, 128, 256];
 
-const images = SIZES.map((size) => ({ size, data: png(size, draw(size)) }));
+/**
+ * One icon entry in the classic DIB form: BITMAPINFOHEADER, a bottom-up
+ * 32-bit BGRA image, then a 1-bit AND mask.
+ *
+ * Not PNG, despite PNG entries being legal since Vista and far smaller.
+ * Explorer reads those happily — the desktop shortcut rendered fine — but
+ * System.Drawing.Icon, which is what the tray loads the file with, does not
+ * reliably accept them and throws instead. An icon that works everywhere
+ * except the one place it is actually needed is worth the extra bytes.
+ */
+function dib(size, rgba) {
+  const header = Buffer.alloc(40);
+  header.writeUInt32LE(40, 0);            /* header size */
+  header.writeInt32LE(size, 4);           /* width */
+  header.writeInt32LE(size * 2, 8);       /* height: image + mask, per spec */
+  header.writeUInt16LE(1, 12);            /* planes */
+  header.writeUInt16LE(32, 14);           /* bits per pixel */
+  header.writeUInt32LE(0, 16);            /* BI_RGB, uncompressed */
+
+  /* Bottom-up rows, and BGRA rather than RGBA. */
+  const image = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    const src = (size - 1 - y) * size * 4;
+    for (let x = 0; x < size; x += 1) {
+      const s = src + x * 4;
+      const d = (y * size + x) * 4;
+      image[d]     = rgba[s + 2];         /* B */
+      image[d + 1] = rgba[s + 1];         /* G */
+      image[d + 2] = rgba[s];             /* R */
+      image[d + 3] = rgba[s + 3];         /* A */
+    }
+  }
+
+  /* The AND mask is legacy: the alpha channel above is what actually gets
+     used. It still has to be present and correctly sized, with each row
+     padded to a 4-byte boundary, or the file is rejected as malformed. */
+  const maskRow = Math.ceil(size / 32) * 4;
+  const mask = Buffer.alloc(maskRow * size);
+
+  return Buffer.concat([header, image, mask]);
+}
+
+const images = SIZES.map((size) => ({ size, data: dib(size, draw(size)) }));
 
 const header = Buffer.alloc(6);
 header.writeUInt16LE(0, 0);              /* reserved */
