@@ -78,10 +78,17 @@ if exist "%OLDLNK%" del "%OLDLNK%"
 echo         Starting it now...
 start "" wscript.exe "%PKG%\Nightwire.vbs"
 
-REM Give the server a moment, then confirm it is actually answering.
-powershell -NoProfile -Command ^
-  "$ok=$false; foreach($i in 1..15){ try { Invoke-WebRequest 'http://127.0.0.1:8787/api/state' -UseBasicParsing -TimeoutSec 2 ^| Out-Null; $ok=$true; break } catch { Start-Sleep -Milliseconds 600 } };" ^
-  "if($ok){ Write-Host '        Server is running.' } else { Write-Host '        Server did not start - see server.log' }"
+REM Give the server a moment, then confirm it is actually answering, and say
+REM what went wrong if it is not. "Setup finished" over a server that never
+REM started is worse than an error, because the failure surfaces much later
+REM as a dashboard that refuses to connect.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$ok=$false; foreach($i in 1..20){ try { Invoke-WebRequest 'http://127.0.0.1:8787/api/health' -UseBasicParsing -TimeoutSec 2 ^| Out-Null; $ok=$true; break } catch { Start-Sleep -Milliseconds 600 } };" ^
+  "if($ok){ Write-Host '        Server is running.' } else {" ^
+  "  Write-Host '        THE SERVER DID NOT START.';" ^
+  "  if(Test-Path 'server.log'){ Write-Host ''; Write-Host '        server.log says:'; Get-Content 'server.log' -Tail 15 }" ^
+  "  else { Write-Host '        No server.log was written - Node.js is probably not on PATH.'; Write-Host '        Close this window, open it again and re-run Setup.bat.' }" ^
+  "}"
 
 REM ------------------------------------------------------- 3. OBS scenes
 echo.
