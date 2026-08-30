@@ -108,22 +108,22 @@
   <h2>What is in this manual</h2>
   <table class="toc">
     <tr><td><b>1 · Setting up</b><br><span class="t-sub">Three steps, about five minutes</span></td><td>p5</td></tr>
-    <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p6</td></tr>
-    <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p8</td></tr>
-    <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p12</td></tr>
-    <tr><td><b>5 · Two things that will save you time</b><br><span class="t-sub">The i button, and LIVE vs PREVIEW</span></td><td>p14</td></tr>
-    <tr><td><b>6 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p17</td></tr>
-    <tr><td><b>7 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p19</td></tr>
-    <tr><td><b>8 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p21</td></tr>
-    <tr><td><b>9 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p23</td></tr>
-    <tr><td><b>10 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p24</td></tr>
+    <tr><td><b>2 · Adding the overlay to OBS</b><br><span class="t-sub">The automatic way and the manual way</span></td><td>p7</td></tr>
+    <tr><td><b>3 · The six scenes</b><br><span class="t-sub">What each one is for</span></td><td>p9</td></tr>
+    <tr><td><b>4 · The dashboard</b><br><span class="t-sub">How it is laid out</span></td><td>p13</td></tr>
+    <tr><td><b>5 · Two things that will save you time</b><br><span class="t-sub">The i button, and LIVE vs PREVIEW</span></td><td>p15</td></tr>
+    <tr><td><b>6 · Live Control</b><br><span class="t-sub">What you use while streaming</span></td><td>p18</td></tr>
+    <tr><td><b>7 · Theme</b><br><span class="t-sub">Colours, glow, motion, performance</span></td><td>p20</td></tr>
+    <tr><td><b>8 · Branding</b><br><span class="t-sub">Your logo and artwork — all optional</span></td><td>p22</td></tr>
+    <tr><td><b>9 · Scenes</b><br><span class="t-sub">Wording on the full-screen cards</span></td><td>p24</td></tr>
+    <tr><td><b>10 · Alerts</b><br><span class="t-sub">Wording, timing, position, effects</span></td><td>p25</td></tr>
     <tr><td><b>11 · Chat and Goals</b></td><td>p26</td></tr>
-    <tr><td><b>12 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p28</td></tr>
-    <tr><td><b>13 · OBS Setup page</b></td><td>p29</td></tr>
-    <tr><td><b>14 · Connecting Twitch or YouTube</b><br><span class="t-sub">Optional — it works by hand without it</span></td><td>p30</td></tr>
-    <tr><td><b>15 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p33</td></tr>
-    <tr><td><b>16 · Going live — checklist</b></td><td>p34</td></tr>
-    <tr><td><b>17 · If something looks wrong</b></td><td>p35</td></tr>
+    <tr><td><b>12 · Widgets</b><br><span class="t-sub">Placement, scale, recent events</span></td><td>p29</td></tr>
+    <tr><td><b>13 · OBS Setup page</b></td><td>p30</td></tr>
+    <tr><td><b>14 · Connecting Twitch or YouTube</b><br><span class="t-sub">Optional — it works by hand without it</span></td><td>p31</td></tr>
+    <tr><td><b>15 · Undoing changes</b><br><span class="t-sub">Three levels of reset</span></td><td>p34</td></tr>
+    <tr><td><b>16 · Going live — checklist</b></td><td>p35</td></tr>
+    <tr><td><b>17 · If something looks wrong</b></td><td>p36</td></tr>
   </table>
 
   <h3>Before you start</h3>
@@ -155,13 +155,38 @@
       or type a command.</li>
   </ol>
 
+  <h3>The icon by the clock</h3>
+  <p>Nightwire runs in the background, so there is no window to keep open and nothing to start
+  each day. It puts an icon in the notification area beside the clock, next to the volume and
+  network icons. Windows often hides new icons behind the small <b>^</b> arrow — drag it down onto
+  the taskbar once and it will stay in view.</p>
+
+  <p>That icon is the whole control surface:</p>
+  <table>
+    <tr><th>Menu item</th><th>What it does</th></tr>
+    <tr><td><b>Open dashboard</b></td><td>The control panel. Double-clicking the icon does the same.</td></tr>
+    <tr><td><b>Open setup guide</b></td><td>The short instructions page in this folder.</td></tr>
+    <tr><td><b>Restart server</b></td><td>What to use after installing an update.</td></tr>
+    <tr><td><b>Stop server and quit</b></td><td>Stops the overlay properly. Your settings are kept.</td></tr>
+    <tr><td><b>Leave running and close this menu</b></td><td>Hides the icon but leaves the overlay running.</td></tr>
+  </table>
+
+  <div class="note">
+    <b>You should never need Task Manager.</b>
+    The tray icon owns the overlay it started and stops it by asking it to close, rather than
+    killing it. That is what stops half-stopped copies accumulating and quietly fighting over
+    the address — if you have ever ended a task to fix something, that is the problem it removes.
+  </div>
+
   <h3>The other buttons in the folder</h3>
+  <p>All still there if you prefer them, and useful if the icon is ever missing.</p>
   <table>
     <tr><th>File</th><th>What it does</th></tr>
     <tr><td><code>Setup.bat</code></td><td>First-time install. Safe to run again if something breaks.</td></tr>
     <tr><td><code>Start Server.bat</code></td><td>Starts the overlay and opens the dashboard.</td></tr>
     <tr><td><code>Stop Server.bat</code></td><td>Stops the overlay. Your settings are kept.</td></tr>
-    <tr><td><code>Server Status.bat</code></td><td>Tells you whether it is running, and on what address.</td></tr>
+    <tr><td><code>Server Status.bat</code></td><td>Whether it is running, and which folder is serving it.</td></tr>
+    <tr><td><code>Uninstall.bat</code></td><td>Removes the shortcuts and stops it running at sign-in. Keeps your settings and artwork.</td></tr>
   </table>
 
   <h3>The dashboard address</h3>

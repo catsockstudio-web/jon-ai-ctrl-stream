@@ -460,6 +460,51 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  /* ---- graceful shutdown ----
+     So that stopping the overlay is an ordinary request rather than hunting a
+     PID and force-killing it. Force-killing is how the package ended up with
+     orphaned node processes in the first place: several launchers could each
+     start a server, none of them owned what they started, and stop.bat only
+     ever killed whichever one currently held the port.
+
+     Two guards, because this stops something mid-stream if it is wrong:
+
+     - Loopback only, checked on the socket rather than trusting the bind
+       address. --host 0.0.0.0 exists so a second machine can open the
+       dashboard, and a viewer on the LAN reaching the dashboard must not also
+       be able to end the broadcast.
+     - Same-origin when a browser is asking. A page on any site can POST to
+       127.0.0.1 in the streamer's own browser; such a request carries an
+       Origin, and one that is not ours is refused. A launcher or script sends
+       no Origin at all, which is how it is told apart from a web page. */
+  if (path === '/api/shutdown' && req.method === 'POST') {
+    const ip = req.socket.remoteAddress ?? '';
+    const loopback = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    if (!loopback) {
+      json(res, 403, { error: 'shutdown is only accepted from this machine' });
+      return;
+    }
+    const origin = req.headers.origin;
+    if (origin && origin !== `http://127.0.0.1:${PORT}` && origin !== `http://localhost:${PORT}`) {
+      json(res, 403, { error: 'cross-origin shutdown refused' });
+      return;
+    }
+
+    json(res, 200, { ok: true, stopping: true, root: ROOT });
+    /* Answer first, then wind down: the caller wants to know it was heard.
+       Settings are already persisted on every change, so there is nothing to
+       flush — just let the reply reach the socket and close the SSE streams
+       so no client is left waiting on a connection that is going away. */
+    setTimeout(() => {
+      for (const client of clients) { try { client.end(); } catch { /* already gone */ } }
+      server.close(() => process.exit(0));
+      /* A browser source holding a keep-alive socket can stop close() from
+         completing. Do not let a tidy shutdown hang instead of shutting down. */
+      setTimeout(() => process.exit(0), 1500).unref?.();
+    }, 50);
+    return;
+  }
+
   /* What build is actually running, versus what is on disk right now. */
   if (path === '/api/health' && req.method === 'GET') {
     const current = await sourceFingerprint();

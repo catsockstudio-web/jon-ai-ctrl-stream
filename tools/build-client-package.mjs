@@ -33,11 +33,16 @@ const OUT = join(ROOT, 'dist');
 const STAGE = join(OUT, NAME);
 
 /* What the client actually needs to run the overlays. */
-const RUNTIME = ['server.mjs', 'config.js', 'dashboard.html', 'control.html', 'start-hidden.vbs', 'boot-check.js'];
+const RUNTIME = ['server.mjs', 'config.js', 'dashboard.html', 'control.html', 'start-hidden.vbs', 'boot-check.js',
+  /* The tray app, and the launcher that opens it with no console window.
+     start-hidden.vbs stays for now: an install from an older package may
+     still have a Startup shortcut pointing at it, and that shortcut has to
+     keep working until Setup replaces it. */
+  'Nightwire.ps1', 'Nightwire.vbs'];
 const DIRS = ['scenes', 'modules', 'src', 'assets', 'obs'];
 /* The client-facing wrappers, copied from client/ into the package root. */
 const CLIENT = ['START HERE.html', 'Setup.bat', 'Start Server.bat', 'Server Status.bat', 'Stop Server.bat',
-  'Nightwire - Setup and Operating Manual.pdf'];
+  'Uninstall.bat', 'Nightwire - Setup and Operating Manual.pdf'];
 
 /* Clear only this build's staging directory. Wiping all of dist/ meant
    building the preset deleted the product's zip and vice versa, so the two
@@ -132,14 +137,27 @@ await writeFile(join(STAGE, 'READ ME FIRST.txt'),
     '  "START HERE.html" is the same thing in short, in your browser.',
     '',
     'DAY TO DAY',
+    '  After Setup there is nothing to start. Nightwire runs at sign-in',
+    '  and sits by the clock, next to the volume and network icons.',
+    '',
+    '  Click that icon for:',
+    '    Open dashboard        the control panel',
+    '    Restart server        after installing an update',
+    '    Stop server and quit  when you are done',
+    '',
     '  Dashboard        http://127.0.0.1:8787/dashboard.html',
-    '  Start Server.bat     start the overlay and open the dashboard',
-    '  Stop Server.bat      stop it (settings are kept)',
-    '  Server Status.bat    is it running?',
+    '',
+    '  The .bat files still work if you prefer them, or if the icon is',
+    '  not there:',
+    '    Start Server.bat     start it and open the dashboard',
+    '    Stop Server.bat      stop it (settings are kept)',
+    '    Server Status.bat    is it running, and from which folder?',
+    '    Uninstall.bat        remove the shortcuts (keeps your settings)',
     '',
     'IN OBS',
     '  Scene Collection -> Import -> obs\\Nightwire.json',
-    '  Then add your camera and game capture BELOW the overlay.',
+    '  Then add your camera and game capture. Top to bottom the sources',
+    '  must read:  overlay, camera, game capture.',
     '',
     'Everything runs on your own PC. Nothing is uploaded anywhere.',
     '',

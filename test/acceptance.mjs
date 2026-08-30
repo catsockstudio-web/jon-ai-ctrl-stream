@@ -211,6 +211,55 @@ check('control still drives scenes after a restart (SSE reconnected)',
   await dash.close();
 }
 
+/* ============================================================
+   Graceful shutdown
+
+   Stopping used to mean force-killing whatever held the port, which
+   left any other server running and free to take the port later —
+   the orphaned-process problem. The tray app and Stop Server.bat now
+   stop the overlay by asking it to close, so that request has to
+   actually end the process, and has to do it with browser sources
+   still attached: an SSE stream nobody closes is exactly what would
+   hold the listener open and turn "stop" into a hang.
+   ============================================================ */
+{
+  check('server is up before the shutdown test',
+    await fetch(`${BASE}/api/health`).then((r) => r.ok).catch(() => false));
+
+  /* A page on any other site must not be able to end someone's broadcast. */
+  const crossOrigin = await fetch(`${BASE}/api/shutdown`, {
+    method: 'POST', headers: { origin: 'https://not-the-overlay.example' },
+  });
+  check('a cross-origin page cannot shut the overlay down', crossOrigin.status === 403,
+    `HTTP ${crossOrigin.status}`);
+  check('and it is still running afterwards',
+    await fetch(`${BASE}/api/health`).then((r) => r.ok).catch(() => false));
+
+  /* Two live sources attached, as during a stream. */
+  const s1 = await obsCtx.newPage();
+  const s2 = await obsCtx.newPage();
+  await s1.goto(`${BASE}/scenes/gameplay.html`, { waitUntil: 'domcontentloaded' });
+  await s2.goto(`${BASE}/scenes/brb.html`, { waitUntil: 'domcontentloaded' });
+  await sleep(1200);
+
+  const started = Date.now();
+  const asked = await fetch(`${BASE}/api/shutdown`, { method: 'POST' }).then((r) => r.json());
+  check('shutdown is accepted', asked.ok === true && asked.stopping === true);
+  check('and it names the folder it stopped', typeof asked.root === 'string' && asked.root.length > 0);
+
+  let gone = false;
+  for (let i = 0; i < 40; i += 1) {
+    await sleep(150);
+    if (!(await fetch(`${BASE}/api/health`).then((r) => r.ok).catch(() => false))) { gone = true; break; }
+  }
+  check('the server actually stops, with sources still connected', gone,
+    `${Date.now() - started} ms`);
+
+  await s1.close().catch(() => {});
+  await s2.close().catch(() => {});
+  server = null;                 /* it stopped itself; nothing left to kill */
+}
+
 /* ---------- done ---------- */
 
 await controlBrowser.close();

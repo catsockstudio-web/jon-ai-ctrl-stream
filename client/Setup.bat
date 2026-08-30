@@ -48,18 +48,35 @@ for /f "tokens=*" %%v in ('node -v') do echo         Node.js %%v found.
 
 REM ---------------------------------------------------------- 2. auto-start
 echo.
-echo   [2/3] Setting the overlay server to run at sign-in...
-set "LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Nightwire Server.lnk"
+echo   [2/3] Installing shortcuts and setting Nightwire to run at sign-in...
+
+REM Three shortcuts, all pointing at the tray app rather than the bare server:
+REM Startup so it is simply there each morning, Start Menu and Desktop so there
+REM is something to click if it was ever quit. The tray is what makes a hidden
+REM background server controllable without going through Task Manager.
+set "STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Nightwire.lnk"
+set "STARTMENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Nightwire.lnk"
+set "DESKTOP=%USERPROFILE%\Desktop\Nightwire.lnk"
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%');" ^
-  "$s.TargetPath = 'wscript.exe';" ^
-  "$s.Arguments = '\"%PKG%\start-hidden.vbs\"';" ^
-  "$s.WorkingDirectory = '%PKG%';" ^
-  "$s.Description = 'Nightwire overlay server';" ^
-  "$s.Save()"
+  "$sh = New-Object -ComObject WScript.Shell;" ^
+  "foreach($p in @('%STARTUP%','%STARTMENU%','%DESKTOP%')){" ^
+  "  $s = $sh.CreateShortcut($p);" ^
+  "  $s.TargetPath = 'wscript.exe';" ^
+  "  $s.Arguments = '\"%PKG%\Nightwire.vbs\"';" ^
+  "  $s.WorkingDirectory = '%PKG%';" ^
+  "  $s.Description = 'Nightwire stream overlay';" ^
+  "  if(Test-Path '%PKG%\obs\nightwire.ico'){ $s.IconLocation = '%PKG%\obs\nightwire.ico' };" ^
+  "  $s.Save()" ^
+  "}"
+
+REM Earlier versions auto-started the server directly. Leave that shortcut in
+REM place and sign-in would start a second, untracked server beside the tray.
+set "OLDLNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Nightwire Server.lnk"
+if exist "%OLDLNK%" del "%OLDLNK%"
 
 echo         Starting it now...
-start "" wscript.exe "%PKG%\start-hidden.vbs"
+start "" wscript.exe "%PKG%\Nightwire.vbs"
 
 REM Give the server a moment, then confirm it is actually answering.
 powershell -NoProfile -Command ^
