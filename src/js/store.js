@@ -61,6 +61,19 @@ export class Store {
     }
   }
 
+  /**
+   * The server has asked this page to reload itself, because new code is on
+   * disk that a page already parsed cannot pick up.
+   *
+   * Whether that is safe is the page's business, not the server's: a scene
+   * reloads, and the dashboard sets `onReload` to something else because
+   * reloading the page someone is editing in would throw their work away.
+   */
+  requestReload() {
+    if (typeof this.onReload === 'function') { this.onReload(); return; }
+    location.reload();
+  }
+
   #notify() {
     for (const fn of this.#stateListeners) {
       try { fn(this.#state); } catch (err) { console.error('[store] subscriber failed', err); }

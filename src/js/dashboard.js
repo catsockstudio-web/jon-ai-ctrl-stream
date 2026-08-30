@@ -568,6 +568,28 @@ $('#brand-name').textContent = brand.name;
 $('#brand-line').textContent = `${brand.tagline} · ${brand.studio}`;
 document.title = `${brand.fullName} — Dashboard`;
 
+/* The dashboard opts out of the server's reload. Refreshing the page someone
+   is mid-edit in would discard a preview draft and whatever field they were
+   typing; the staleness banner already tells them when a restart is due. */
+store.onReload = () => checkServerVersion();
+
+$('#reload-sources').addEventListener('click', async () => {
+  const out = $('#reload-result');
+  out.textContent = 'Refreshing…';
+  try {
+    const res = await fetch('/api/reload', { method: 'POST' });
+    const body = await res.json();
+    /* Report the count, because "nothing happened" and "no sources are open"
+       look identical otherwise, and only one of them is a problem. */
+    out.textContent = body.sources
+      ? `Refreshed ${body.sources} open source${body.sources === 1 ? '' : 's'}.`
+      : 'No open sources to refresh — is OBS running?';
+  } catch {
+    out.textContent = 'Could not reach the server.';
+  }
+  setTimeout(() => { out.textContent = ''; }, 6000);
+});
+
 checkServerVersion();
 /* Cheap, and it catches an update that lands while the page is open. */
 setInterval(checkServerVersion, 60_000);

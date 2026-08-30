@@ -179,6 +179,38 @@ await sleep(900);
 check('control still drives scenes after a restart (SSE reconnected)',
   (await chatting.content()).includes('Reconnected and still driving'));
 
+/* ---------- server-pushed reload ----------
+   Settings travel over SSE, so nothing needs refreshing for those. This is the
+   other case: new code on disk, which a page that already parsed the old code
+   cannot pick up. It exists so nobody has to tick OBS's "Refresh browser when
+   scene becomes active", which pays a reload on every cut to solve a problem
+   that only happens after an update. */
+{
+  let reloads = 0;
+  chatting.on('load', () => { reloads += 1; });
+  const before = reloads;
+
+  const res = await fetch(`${BASE}/api/reload`, { method: 'POST' });
+  const body = await res.json();
+  await chatting.waitForTimeout(2000);
+
+  check('a scene reloads when the server asks', reloads > before, `${before} -> ${reloads}`);
+  check('the scene still mounts after reloading', (await chatting.locator('.stage').count()) === 1);
+  check('the reload reports how many sources it reached', body.sources >= 1, `${body.sources} source(s)`);
+
+  /* The count must mean OBS sources. Counting the dashboard would include the
+     person who pressed the button, and a number that counts the asker is
+     worse than no number. */
+  const dash = await controlCtx.newPage();
+  await dash.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
+  await dash.waitForTimeout(2000);
+  const withDash = await (await fetch(`${BASE}/api/reload`, { method: 'POST' })).json();
+  await dash.waitForTimeout(1200);
+  check('the dashboard is not counted as a source', withDash.sources === body.sources + 1,
+    `${body.sources} -> ${withDash.sources} (its preview frame is a scene, and counts)`);
+  await dash.close();
+}
+
 /* ---------- done ---------- */
 
 await controlBrowser.close();

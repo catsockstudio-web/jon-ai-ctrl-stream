@@ -198,6 +198,22 @@
             </p>
           </div>
           <div class="ctl-card">
+            <div class="ctl-card__title">AFTER AN UPDATE</div>
+            <p class="dash-panel__intro" style="margin:0 0 12px;font-size:13px">
+              Your settings reach OBS the moment you change them — there is nothing to
+              refresh for those. This is only for when a <strong>new version</strong> of the
+              overlay itself is installed: a page that is already open cannot pick up new
+              code by itself.
+            </p>
+            <button class="ctl-btn ctl-btn--cyan" id="reload-sources">REFRESH ALL SOURCES</button>
+            <span id="reload-result" class="dash-status__hint" style="margin-left:12px"></span>
+            <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">
+              Leave OBS's own <em>Refresh browser when scene becomes active</em>
+              <strong>unticked</strong>. It reloads on every cut to solve a problem that only
+              happens after an update, and costs a visible flash each time you switch scenes.
+            </p>
+          </div>
+          <div class="ctl-card">
             <div class="ctl-card__title">CAMERA PLACEMENT</div>
             <div id="obs-cameras"></div>
             <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">

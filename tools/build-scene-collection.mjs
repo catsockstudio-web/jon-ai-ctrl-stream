@@ -15,6 +15,7 @@
    ============================================================ */
 
 import { writeFileSync } from 'node:fs';
+import { brand } from '../src/brand.js';
 import { CAMERA_OPENINGS } from '../src/js/components.js';
 
 const BASE = 'http://127.0.0.1:8787';
@@ -55,7 +56,18 @@ function browserSource(name, path) {
     settings: {
       url: `${BASE}${path}`,
       width: 1920, height: 1080,
-      /* Keep state across scene switches rather than reloading each time. */
+      /* Both deliberately off.
+
+         `shutdown` would unload the source when its scene is not showing, so
+         cutting to a scene would show it building itself.
+
+         `restart_when_active` would reload the page on every scene switch.
+         It is the obvious-looking way to pick up changes and the wrong one:
+         settings already arrive over SSE the moment they change, so there is
+         nothing to refresh for, and the reload costs a visible flash on every
+         cut plus any alert that happened to be on screen. Use REFRESH ALL
+         SOURCES on the dashboard's OBS page when new CODE ships — that
+         reloads every source once, on demand, instead of on every cut. */
       shutdown: false,
       restart_when_active: false,
     },
@@ -146,19 +158,19 @@ const game         = gameCapture('Game Capture');
 
 /* Scene items are listed TOP-FIRST in OBS. Overlay above, camera below,
    game capture at the bottom — which is what makes the cutouts work. */
-const scStarting = scene('JON · 1 Starting Soon', [item(srcStarting, 1)]);
-const scGameplay = scene('JON · 2 Gameplay', [
+const scStarting = scene(`${brand.slug} · 1 Starting Soon`, [item(srcStarting, 1)]);
+const scGameplay = scene(`${brand.slug} · 2 Gameplay`, [
   item(srcGameplay, 1),
   item(camGameplay, 2, { x: gp.x, y: gp.y, w: gp.width, h: gp.height }),
   item(game, 3),
 ]);
-const scChatting = scene('JON · 3 Just Chatting', [
+const scChatting = scene(`${brand.slug} · 3 Just Chatting`, [
   item(srcChatting, 1),
   item(camChatting, 2, { x: jc.x, y: jc.y, w: jc.width, h: jc.height }),
 ]);
-const scBrb     = scene('JON · 4 BRB',     [item(srcBrb, 1)]);
-const scEnding  = scene('JON · 5 Ending',  [item(srcEnding, 1)]);
-const scOffline = scene('JON · 6 Offline', [item(srcOffline, 1)]);
+const scBrb     = scene(`${brand.slug} · 4 BRB`,     [item(srcBrb, 1)]);
+const scEnding  = scene(`${brand.slug} · 5 Ending`,  [item(srcEnding, 1)]);
+const scOffline = scene(`${brand.slug} · 6 Offline`, [item(srcOffline, 1)]);
 
 const scenes = [scStarting, scGameplay, scChatting, scBrb, scEnding, scOffline];
 

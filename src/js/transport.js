@@ -53,10 +53,21 @@ export const postReset = () => post(API.reset, {});
  * @param {(patch: object) => void} handlers.onPatch  incremental change
  * @param {(alert: object) => void} handlers.onAlert  one-shot alert
  * @param {(status: 'open'|'lost') => void} [handlers.onStatus]
+ * @param {() => void} [handlers.onReload]  server asked this page to reload
  * @returns {() => void} close
  */
-export function openStream({ onState, onPatch, onAlert, onStatus }) {
-  const source = new EventSource(API.events);
+export function openStream({ onState, onPatch, onAlert, onStatus, onReload, role = 'scene' }) {
+  /* Pages say what they are, so the server can report how many OBS sources a
+     refresh actually reached. Counting every connection would include the
+     dashboard and its own preview frame, and a number that counts the person
+     asking is worse than no number. */
+  const source = new EventSource(`${API.events}?role=${encodeURIComponent(role)}`);
+
+  /* A reload is the one thing the server can ask a page to do to itself. It
+     is for picking up new code after an update; settings never need it. The
+     dashboard is excluded by its own handler — reloading the page you are
+     working in would throw away whatever you were in the middle of. */
+  source.addEventListener('reload', () => onReload?.());
 
   source.addEventListener('state', (event) => onState?.(JSON.parse(event.data)));
   source.addEventListener('patch', (event) => onPatch?.(JSON.parse(event.data)));

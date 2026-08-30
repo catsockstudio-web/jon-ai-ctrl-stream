@@ -34,10 +34,16 @@ export class ManualProvider extends Provider {
     }
 
     this.#close = openStream({
+      /* The dashboard sets this; a scene keeps the default. */
+      role: this.config?.role ?? (document.body?.classList.contains('dash') ? 'dashboard' : 'scene'),
       onState: (state) => this.store.replaceState(state),
       onPatch: (patch) => this.store.applyState(patch),
       onAlert: (alert) => this.store.emitAlert(alert),
       onStatus: (status) => this.store.applyState({ connection: status }),
+      /* A page decides for itself whether a reload is safe. A scene always
+         reloads; the dashboard refuses, because reloading the page someone is
+         working in would discard whatever they were part-way through. */
+      onReload: () => this.store.requestReload(),
     });
   }
 

@@ -1,24 +1,24 @@
 {
-    "current_scene": "JON · 1 Starting Soon",
-    "current_program_scene": "JON · 1 Starting Soon",
+    "current_scene": "Nightwire · 1 Starting Soon",
+    "current_program_scene": "Nightwire · 1 Starting Soon",
     "scene_order": [
         {
-            "name": "JON · 1 Starting Soon"
+            "name": "Nightwire · 1 Starting Soon"
         },
         {
-            "name": "JON · 2 Gameplay"
+            "name": "Nightwire · 2 Gameplay"
         },
         {
-            "name": "JON · 3 Just Chatting"
+            "name": "Nightwire · 3 Just Chatting"
         },
         {
-            "name": "JON · 4 BRB"
+            "name": "Nightwire · 4 BRB"
         },
         {
-            "name": "JON · 5 Ending"
+            "name": "Nightwire · 5 Ending"
         },
         {
-            "name": "JON · 6 Offline"
+            "name": "Nightwire · 6 Offline"
         }
     ],
     "name": "Nightwire",
@@ -362,7 +362,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 1 Starting Soon",
+            "name": "Nightwire · 1 Starting Soon",
             "uuid": "7419c2f4-772e-41ec-ab03-1606fa1085a2",
             "id": "scene",
             "versioned_id": "scene",
@@ -430,7 +430,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 2 Gameplay",
+            "name": "Nightwire · 2 Gameplay",
             "uuid": "9924d3b1-c800-47fc-a683-4cbee60851f3",
             "id": "scene",
             "versioned_id": "scene",
@@ -574,7 +574,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 3 Just Chatting",
+            "name": "Nightwire · 3 Just Chatting",
             "uuid": "efb510af-0d86-4a93-ae65-e9862bd649b5",
             "id": "scene",
             "versioned_id": "scene",
@@ -680,7 +680,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 4 BRB",
+            "name": "Nightwire · 4 BRB",
             "uuid": "fe36accd-e7f6-4e18-ac06-c075fd182e8a",
             "id": "scene",
             "versioned_id": "scene",
@@ -748,7 +748,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 5 Ending",
+            "name": "Nightwire · 5 Ending",
             "uuid": "ba1a5a30-f9ff-4241-a1b6-446ad82313ea",
             "id": "scene",
             "versioned_id": "scene",
@@ -816,7 +816,7 @@
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "private_settings": {},
-            "name": "JON · 6 Offline",
+            "name": "Nightwire · 6 Offline",
             "uuid": "c4b0a0c2-ae24-47f6-a8a0-65a2d8b5910c",
             "id": "scene",
             "versioned_id": "scene",

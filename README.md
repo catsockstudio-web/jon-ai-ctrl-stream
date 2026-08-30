@@ -328,6 +328,23 @@ restarting OBS loses nothing.
 | **Activity**       | The three gameplay tiles (firing an alert updates the matching one for you), or the recent-events list |
 | **Scene preview**  | Live preview of any scene; the checkerboard is transparency |
 
+### Refreshing after an update
+
+Settings reach every source over SSE the moment you change them, so nothing
+needs refreshing for those. New **code** is the other case: a page that already
+parsed the old version cannot pick up a new one by itself.
+
+**OBS Setup → REFRESH ALL SOURCES** tells every open source to reload, once, on
+demand, and reports how many it reached. The dashboard excludes itself —
+reloading the page you are working in would discard a preview draft and
+whatever field you were typing.
+
+Leave OBS's own **Refresh browser when scene becomes active** unticked. It is
+the obvious-looking way to pick up changes and the wrong one: it reloads on
+every cut to solve a problem that happens after an update, and costs a visible
+flash each time you switch scenes plus any alert that was on screen. The
+generated scene collection ships with it off.
+
 **Positioning tip.** Turn on *Sample gameplay plate* and *Safe-area guides*
 while you lay sources out, then turn both off before going live.
 

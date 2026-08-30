@@ -385,6 +385,9 @@ const server = createServer(async (req, res) => {
     });
     /* Retry hint: how long a dropped client waits before reconnecting. */
     res.write('retry: 2000\n\n');
+    /* A page says what it is on connect, so a refresh can report how many OBS
+       sources it actually reached rather than counting the dashboard asking. */
+    res.jaRole = url.searchParams.get('role') === 'dashboard' ? 'dashboard' : 'scene';
     clients.add(res);
     /* A source that opens or refreshes gets the current state immediately,
        as its first event, with no request of its own. */
@@ -440,6 +443,20 @@ const server = createServer(async (req, res) => {
     const refusal = relay?.accept(key, body);
     if (refusal) { json(res, 400, { error: refusal }); return; }
     json(res, 200, { ok: true });
+    return;
+  }
+
+  /* Tell every open source to reload itself.
+
+     Settings travel over SSE, so nothing here is needed for those. This is for
+     the other case: new CODE on disk, which a running page cannot pick up
+     because it already parsed the old one. The alternative is OBS's "Refresh
+     browser when scene becomes active", which pays a reload on every cut to
+     solve a problem that happens after an update. */
+  if (path === '/api/reload' && req.method === 'POST') {
+    broadcast('reload', { at: Date.now() });
+    const sources = [...clients].filter((c) => c.jaRole !== 'dashboard').length;
+    json(res, 200, { ok: true, sources });
     return;
   }
 
