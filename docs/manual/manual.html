@@ -814,6 +814,15 @@
   run <code>Stop Server.bat</code> (in either folder), then <code>Start Server.bat</code> from the
   new one, and refresh your OBS sources.</p>
 
+  <h3>The folder will not delete — “the file is open in another program”</h3>
+  <p>Windows will not delete a folder while a program is running from inside it, and Nightwire keeps
+  <code>server.log</code> open the whole time it runs. So an old copy cannot be removed until its
+  server is stopped, and the message names <code>server.log</code> rather than the thing actually
+  holding it.</p>
+  <p>Run <code>Uninstall.bat</code> from that folder. It stops every overlay process, removes the
+  shortcuts, and then tells you whether the folder is free. <code>Stop Server.bat</code> does the
+  stopping part on its own if you want to keep the install.</p>
+
   <h3>A button does nothing</h3>
   <p>Look for a yellow banner at the top of the dashboard. It means the running server is older than
   the files on disk, and it will tell you to restart. Run <code>Stop Server.bat</code> then

@@ -26,8 +26,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "  foreach($p in $strays){ Write-Host ('    PID ' + $p.ProcessId + '  ' + $p.CommandLine) };" ^
   "  Write-Host '';" ^
   "  $answer = Read-Host '  Stop those too? (Y/N)';" ^
-  "  if($answer -match '^[Yy]'){ foreach($p in $strays){ Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }; Write-Host '  Stopped.' }" ^
-  "}"
+  "  if($answer -match '^[Yy]'){ foreach($p in $strays){ Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 600; Write-Host '  Stopped.' }" ^
+  "};" ^
+  "Start-Sleep -Milliseconds 400;" ^
+  "try { [IO.File]::Open((Join-Path (Get-Location).Path 'server.log'),'Open','Read','None').Close() }" ^
+  "catch [IO.FileNotFoundException] { }" ^
+  "catch { Write-Host ''; Write-Host '  NOTE: server.log is still open, so this folder cannot be deleted yet.'; Write-Host '  Something is still running from it - run this again, or check Task Manager.' }"
 
 echo.
 pause
