@@ -249,7 +249,11 @@ export function defaults(config) {
       animation: { style: 'rise', speed: 200, distance: 8 },
       /* Demo content so a fresh install looks populated; clearly test data,
          and replaced wholesale once a chat provider is connected. */
-      messages: [...config.chat.demoMessages],
+      /* Marked so a live source can tell its own messages from the seed. The
+         package must look finished before anything is connected, but the
+         moment real chat arrives, fake viewers alongside real ones would be
+         on stream — so the seed is identifiable and gets dropped. */
+      messages: config.chat.demoMessages.map((m) => ({ ...m, demo: true })),
     },
 
     goals: {
@@ -275,7 +279,10 @@ export function defaults(config) {
       categories: Object.fromEntries(ALERT_TYPES.map((t) => [t, true])),
       /* The three gameplay tiles. A live provider replaces these values; the
          labels and accents stay local configuration. */
-      tiles: JSON.parse(JSON.stringify(config.activity)),
+      /* Same reasoning as the chat seed: a tile reading "LATEST FOLLOWER:
+         mothwing" on a live stream is worse than an empty one. */
+      tiles: Object.fromEntries(Object.entries(config.activity)
+        .map(([k, v]) => [k, { ...v, demo: true }])),
       events: [],
     },
 

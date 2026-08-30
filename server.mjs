@@ -245,6 +245,22 @@ function chatBadge(badges) {
   return undefined;
 }
 
+/* A live event owns the tile for its type from then on, so the demo name is
+   replaced rather than sitting under a real stream. Types with no tile — raids,
+   gift subs — simply have nowhere to land, which is fine. */
+const TILE_FOR_KIND = { follower: 'follower', sub: 'sub', tip: 'tip' };
+function updateTile(alert) {
+  const key = TILE_FOR_KIND[alert?.kind ?? alert?.type];
+  if (!key) return;
+  const name = String(alert.name ?? '').slice(0, 40);
+  if (!name) return;
+  const amount = String(alert.amount ?? '').trim();
+  const value = key === 'tip' && amount ? `${name} · ${amount}` : name;
+  state = merge(state, { activity: { tiles: { [key]: { value, demo: false } } } });
+  persist();
+  broadcast('patch', { activity: { tiles: { [key]: { value, demo: false } } } });
+}
+
 /* ---------- integrations ----------
    A live source reaches the overlays through exactly the same three doors
    the dashboard uses, so nothing downstream can tell the difference between
@@ -253,6 +269,7 @@ const integrations = new Integrations({
   emitAlert(alert) {
     broadcast('alert', { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...alert });
     recordEvent(alert);
+    updateTile(alert);
   },
   patch(patch) {
     state = merge(state, patch);
@@ -274,7 +291,11 @@ const integrations = new Integrations({
     };
     if (!message.text) return;
     const cap = Math.max(1, Math.min(Number(state.chat?.maxMessages) || 12, 40));
-    const messages = [message, ...(state.chat?.messages ?? [])].slice(0, cap);
+    /* The first real message clears the demo seed. Leaving it would put
+       invented viewers on stream next to actual ones, which is the single
+       most embarrassing thing this overlay could do. */
+    const existing = (state.chat?.messages ?? []).filter((m) => !m.demo);
+    const messages = [message, ...existing].slice(0, cap);
     state = setBranch(state, ['chat', 'messages'], messages);
     persist();
     broadcast('patch', { chat: { messages } });

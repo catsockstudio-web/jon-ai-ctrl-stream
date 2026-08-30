@@ -130,6 +130,54 @@ await waitForServer();
 }
 
 /* ============================================================
+   1b. Demo content gives way to real events
+   ============================================================ */
+{
+  /* The package ships looking finished, which means seeded chat and tiles.
+     The moment a live source speaks, those inventions must go: fake viewers
+     next to real ones is the most embarrassing thing this overlay could do
+     on stream. */
+  await post('/api/reset');
+  await sleep(400);
+  const relay = await source('relay');
+  const key = relay.endpoint;
+
+  const seeded = await getState();
+  check('the shipped chat is marked as demo',
+    seeded.chat.messages.length > 0 && seeded.chat.messages.every((m) => m.demo),
+    `${seeded.chat.messages.length} messages`);
+  check('the shipped tiles are marked as demo',
+    Object.values(seeded.activity.tiles).every((t) => t.demo));
+
+  await post(key, { kind: 'chat', user: 'real_viewer', text: 'first real message' });
+  const cleared = await until(async () => {
+    const now = await getState();
+    return now.chat.messages.some((m) => m.author === 'real_viewer') ? now : null;
+  });
+  check('the first real message clears the demo chat',
+    cleared.chat.messages.length === 1 && !cleared.chat.messages[0].demo,
+    cleared.chat.messages.map((m) => m.author).join(', '));
+
+  await post(key, { kind: 'follower', name: 'real_follower' });
+  const tile = await until(async () => {
+    const now = await getState();
+    return now.activity.tiles.follower.value === 'real_follower' ? now : null;
+  });
+  check('a real follower takes over its tile', Boolean(tile), tile?.activity.tiles.follower.value);
+  check('the tile is no longer marked demo', tile?.activity.tiles.follower.demo === false);
+  check('a tile with no matching event is left alone',
+    tile?.activity.tiles.sub.demo === true, JSON.stringify(tile?.activity.tiles.sub));
+
+  await post(key, { kind: 'tip', name: 'real_tipper', amount: '$5.00' });
+  const tipTile = await until(async () => {
+    const now = await getState();
+    return now.activity.tiles.tip.value.includes('real_tipper') ? now : null;
+  });
+  check('a tip tile carries the amount', tipTile?.activity.tiles.tip.value === 'real_tipper · $5.00',
+    tipTile?.activity.tiles.tip.value);
+}
+
+/* ============================================================
    2. Twitch — device flow against the mock
    ============================================================ */
 {

@@ -680,6 +680,7 @@ node test/alpha.mjs        # camera cutouts, masks, assets actually paint
 node test/dashboard.mjs    # the ten pages, theming, uploads
 node test/customizer.mjs   # customisation reaches live overlays (own server)
 node test/integrations.mjs # Twitch/YouTube/relay against a mock (own server)
+node test/buttons.mjs      # every clickable thing in the dashboard does something
 ```
 
 `customizer.mjs` is the one that matters most: every check reads the **scene**,
@@ -702,6 +703,18 @@ between "the code looks right" and "a `channel.cheer` frame becomes a bits
 alert on screen". It covers every event mapping, the gifted-sub double-alert
 trap, reconnection after a dropped socket, surviving a server restart, and six
 checks that no token reaches state, disk, or the status endpoint.
+
+`buttons.mjs` presses every button on every dashboard page and asks whether
+anything at all changed — server state, the page, the preview frame, the
+clipboard, or a request. It exists because the other suites only prove that
+*controls with a state path* reach the overlay; they say nothing about presets,
+type tabs, copy buttons, disclosures or the demo tools, which are exactly the
+things someone presses and, when nothing happens, concludes the product is
+broken. Writing it caught a flaw in itself first: the sweep's own click on
+PREVIEW put every later button into a mode where changes are deliberately held
+back, and it duly reported the entire left column as dead. An audit that
+creates the condition it is testing for is worse than no audit, so it now
+normalises the mode between buttons.
 
 `acceptance.mjs` drives the control page and the overlays in **two separate
 Chromium instances**, which share no `BroadcastChannel` and no `localStorage`,
