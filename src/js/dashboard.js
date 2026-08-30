@@ -982,9 +982,24 @@ $('#obs-modules').innerHTML = MODULE_SOURCES.map(([label, path, size]) => urlRow
 $('#obs-cameras').innerHTML = CAMERAS.map(([label, size, pos]) => `
   <div class="dash-url">
     <div class="dash-url__label">${label}</div>
-    <div class="dash-url__value">Camera source, placed <strong>below</strong> the overlay</div>
+    <div class="dash-url__value">Camera source — <strong>below</strong> the overlay, <strong>above</strong> game capture</div>
     <div class="dash-url__size">${size} @ ${pos}</div>
   </div>`).join('');
+
+/* Which folder is actually being served. Cheap to show, and the one fact that
+   settles "I installed the update and nothing changed": a server left running
+   from an older copy holds the port, so the new copy never gets served at all
+   and nothing on screen says so. A server too old to report `root` is itself
+   the answer to the same question. */
+fetch('/api/health', { cache: 'no-store' })
+  .then((res) => (res.ok ? res.json() : null))
+  .then((health) => {
+    const el = $('#obs-serving');
+    if (!el) return;
+    el.textContent = health?.root ?? 'older than this page — restart the server from the new folder';
+    if (health?.root) el.title = health.root;
+  })
+  .catch(() => { const el = $('#obs-serving'); if (el) el.textContent = 'server not reachable'; });
 
 function copy(text, button) {
   const done = () => { const old = button.textContent; button.textContent = 'COPIED'; setTimeout(() => { button.textContent = old; }, 1200); };

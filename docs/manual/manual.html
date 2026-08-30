@@ -775,8 +775,19 @@
   the source list should read Overlay, then Camera, then Game Capture, top to bottom.</p>
 
   <h3>The dashboard says SERVER UNREACHABLE</h3>
-  <p>Run <code>Start Server.bat</code>. If it says the port is already in use, the server is already
-  running — refresh the dashboard instead.</p>
+  <p>Run <code>Start Server.bat</code>. If it says the port is already in use, a server is already
+  running — refresh the dashboard instead. If you have just installed an update, see the next entry
+  first: the server holding the port may be the old one.</p>
+
+  <h3>I installed an update and nothing changed</h3>
+  <p>Almost always this: a server from the <b>previous</b> copy of the package is still running. It
+  holds the port, so <code>Start Server.bat</code> in the new folder exits with “port already in
+  use”, and every page carries on being served the old code. Nothing on screen looks wrong — the
+  dashboard still works, uploads still save — the new behaviour simply is not there.</p>
+  <p>Check which copy is answering: the <b>OBS Setup</b> page shows the folder the running server is
+  serving from, under <b>Which copy is running</b>. If that is not the folder you just extracted into,
+  run <code>Stop Server.bat</code> (in either folder), then <code>Start Server.bat</code> from the
+  new one, and refresh your OBS sources.</p>
 
   <h3>A button does nothing</h3>
   <p>Look for a yellow banner at the top of the dashboard. It means the running server is older than

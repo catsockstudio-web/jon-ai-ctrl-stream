@@ -470,6 +470,14 @@ const server = createServer(async (req, res) => {
       stale: current !== BOOT_FINGERPRINT,
       startedAt: STARTED_AT,
       schema: SCHEMA_VERSION,
+      /* WHICH COPY of the package is answering. Updating means extracting a
+         new folder, and a server still running from the old one keeps the
+         port — the new launcher exits with "port already in use" and every
+         page carries on being served the old code, silently. The
+         fingerprints above cannot show that: the old folder's files never
+         changed, so nothing looks stale. The path can, and it is the first
+         thing worth knowing when an update appears not to have taken. */
+      root: ROOT,
     });
     return;
   }

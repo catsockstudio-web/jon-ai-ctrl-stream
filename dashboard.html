@@ -217,10 +217,24 @@
             <div class="ctl-card__title">CAMERA PLACEMENT</div>
             <div id="obs-cameras"></div>
             <p class="dash-panel__intro" style="margin:12px 0 0;font-size:13px">
-              Put the camera <strong>below</strong> the overlay in OBS — the overlay has a transparent
-              opening for it. On Gameplay, add an <em>Image Mask/Blend</em> filter (Alpha Mask) pointing at
+              Order, top to bottom: <strong>Overlay, then Camera, then Game Capture</strong>. The overlay
+              has a transparent opening the camera shows through, and game capture is full-screen and
+              opaque — placed above the camera it hides it completely. On Gameplay, add an
+              <em>Image Mask/Blend</em> filter (Alpha Mask) pointing at
               <code>obs/camera-mask-gameplay.png</code> so the corners match the frame.
             </p>
+          </div>
+          <div class="ctl-card">
+            <div class="ctl-card__title">WHICH COPY IS RUNNING</div>
+            <p class="dash-panel__intro" style="margin:0 0 10px;font-size:13px">
+              The folder this server is serving from. If you have just installed an update and
+              nothing changed, check this is the folder you extracted into — a server left running
+              from an older copy keeps the port, and every page carries on being served the old code.
+            </p>
+            <div class="dash-url">
+              <div class="dash-url__label">Serving</div>
+              <div class="dash-url__value" id="obs-serving">…</div>
+            </div>
           </div>
         </div>
 
