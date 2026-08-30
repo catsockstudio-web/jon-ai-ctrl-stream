@@ -637,14 +637,53 @@ await loadPersisted();
 /* A hidden auto-start server plus a manually launched one is an easy mistake
    to make. Say so plainly instead of printing a stack trace into a log file
    nobody is watching. */
-server.on('error', (err) => {
+server.on('error', async (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`
-  Port ${PORT} is already in use — the overlay server is most likely
-  already running (check with status.bat, stop it with stop.bat).
+    /* Which copy already holds the port matters enormously, and the old
+       message ("nothing to do, your sources are already being served") was
+       reassuring and wrong whenever the answer was a DIFFERENT folder: after
+       an update the previous server keeps the port, this one exits, and every
+       page carries on being served the old code with nothing saying so. Ask
+       the incumbent where it lives before deciding which of those it is. */
+    let servingRoot = null;
+    try {
+      const res = await fetch(`http://127.0.0.1:${PORT}/api/health`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) servingRoot = (await res.json()).root ?? null;
+    } catch { /* not ours, or too old to answer — handled below */ }
+
+    const sameFolder = servingRoot !== null && resolve(servingRoot) === ROOT;
+
+    if (sameFolder) {
+      console.error(`
+  Port ${PORT} is already in use by this same folder — the overlay server
+  is already running (check with status.bat, stop it with stop.bat).
 
   Nothing to do: your browser sources are already being served.
 `);
+    } else if (servingRoot) {
+      console.error(`
+  Port ${PORT} is already in use by a DIFFERENT copy of the overlay.
+
+    already running:  ${servingRoot}
+    this folder:      ${ROOT}
+
+  That older server keeps the port, so this one cannot start and every page
+  carries on being served from the folder above — which is why an update can
+  look like it changed nothing.
+
+  Run stop.bat, then start this one again.
+`);
+    } else {
+      console.error(`
+  Port ${PORT} is already in use, by something that is not this overlay
+  (or by a copy too old to say where it lives).
+
+  Run stop.bat and try again. If that does not help, check for leftover
+  node.exe processes in Task Manager.
+`);
+    }
     process.exit(1);
   }
   console.error(err);
